@@ -51,6 +51,12 @@ async def send_welcome(message: types.Message, session: AsyncSession):
     await message.answer("Данные удалены!\n\n Клиенты больше не побеспокоят😉\n\nНужно чистить данные через некоторый промежуток времени...")
 
 
+@managers_group_router.message(StateFilter('*'), Command("set_group"))
+async def send_welcome(message: types.Message, session: AsyncSession):
+    await message.delete()
+    config.MANAGERS_GROUP_ID = message.chat.id
+    await message.answer("✅ Группа установлена!")
+
 @managers_group_router.message(StateFilter('*'), MainManagerFilter(), F.reply_to_message)  # Обработчик ответов менеджера
 async def caught_query(message: types.Message, state: FSMContext, session: AsyncSession):
     # Получаем ID сообщения, на которое отвечает менеджер

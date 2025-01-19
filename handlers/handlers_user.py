@@ -41,6 +41,7 @@ class Statess(StatesGroup):
     add_DefAnswer = State()                     # Состояние добавления частого ответа
     DefQuestion_add = State()                   # Состояние добавления частого вопроса
     ask_question = State()                      # Состояние записи вопроса для менеджера
+    consultation = State()                      # Состояние формирования заказа
 
 
 #######################################  Фильтр групп   #########################################
@@ -70,10 +71,37 @@ async def start_handler(message: types.Message, state: FSMContext) -> None:
 
 @user_router_manager.message(F.text.casefold().contains("подобрать автомобиль"))   # Логика Подобрать автомобиль
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика подбора автомобиля*")
+    await message.answer("Напишите ваши пожелания по автомобилю🚗\nЧтобы наши менеджеры могли правильно подобрать вам авто", reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Statess.consultation)
 
 
-
+@user_router_manager.message(Statess.consultation, F.text)   # Логика Задать вопрос
+async def hot_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
+    mesID = message.message_id  # ID исходного сообщения клиента
+    delmes = await message.answer("Поиск свободного менеджера...")
+    await bot.send_message(chat_id=config.MANAGERS_GROUP_ID, text = "❓Вопрос от клиента")
+    # Пересылаем сообщение клиента в группу менеджеров
+    forwarded_message = await bot.forward_message(
+        chat_id=config.MANAGERS_GROUP_ID, 
+        from_chat_id=message.chat.id, 
+        message_id=mesID
+    )
+    
+    # Добавляем диалог в базу данных, используя ID пересланного сообщения
+    await orm_add_dialog(
+        session, 
+        client_id=message.from_user.id, 
+        client_message_id=forwarded_message.message_id  # ID пересланного сообщения
+    )
+    await bot.delete_message(message.chat.id, delmes.message_id)
+    await message.answer(
+        f"Ваш заказ:\n<b>{message.text}</b>\nотправлен менеджерам✅\nОжидайте ответ🕜\nЕсли вам нужно продолжить искать автомобиль, пока ожидаете ответ, используйте команду /start", 
+        reply_markup=get_callback_btns(btns={
+                'Закончить диалог': f'end_{mesID}',
+            }),
+        parse_mode='HTML'
+    )
+    await state.clear()
 
 
 
@@ -207,7 +235,8 @@ async def hot_handler(message: types.Message, state: FSMContext, session: AsyncS
             inline_keyboard=[
                 [InlineKeyboardButton(text="Закончить диалог", callback_data=f"end_{mesID}")]
             ]
-        )
+        ),
+        parse_mode='HTML'
     )
     await state.clear()
 

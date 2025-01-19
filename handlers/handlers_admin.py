@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from handlers.handlers_user import Statess
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row
-from keybords.return_kbds import admin_menu, access_settings, admin_settings, manager_settings, hot_settings, add_del_back_menu
+from keybords.return_kbds import admin_menu, access_settings, admin_settings, manager_settings, auto_settings, add_del_back_menu
 # from keybords.inline_kbds import get_callback_btns
 
 bot = Bot(token=config.API_TOKEN)
@@ -309,150 +309,23 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
 
 ############################################ кнопка "Горячие предложения" ############################################
 
-@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("горячие предложения"))  # Обработка кнопки "Управление доступом"
+@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("база автомобилей"))  # Обработка кнопки "Управление доступом"
 async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("Настройка фильтров", reply_markup=hot_settings.as_markup(
+    await message.answer("Настройка фильтров", reply_markup=auto_settings.as_markup(
                             resize_keyboard=True))
     
 
 ########### Автомобили по стоимости
 
-@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("автомобили по стоимости"))  # Обработка кнопки "Автомобили по стоимости"
+@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("добавить автомобиль"))  # Обработка кнопки "Автомобили по стоимости"
 async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Cars_by_cost_set)
-    await message.answer("Изменение автомобилей по стоимости", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
+    await message.answer(config.ADD_CARS_MESSAGE, parse_mode='HTML')
 
-@admin_router.message(Statess.Cars_by_cost_set, F.text.casefold().contains("назад"))  # Обработка кнопки "Назад"
+
+@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("назад"))  # Обработка кнопки "Автомобили по стоимости"
 async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Admin_kbd)
-    await message.answer("Выберите варивант", reply_markup=hot_settings.as_markup(
+    await message.answer("Назад🔙", reply_markup=admin_menu.as_markup(
                             resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Cars_by_cost_set, F.text.casefold().contains("добавить"))  # Обработка кнопки "добавить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика добавления авто по стоимости*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Cars_by_cost_set, F.text.casefold().contains("удалить"))  # Обработка кнопки "удалить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика удаления авто по стоимости*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-
-########### Популярные автомобили
-
-@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("популярные автомобили"))  # Обработка кнопки "Популярные автомобили"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Popular_cars_set)
-    await message.answer("Изменение популярных автомобилей", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Popular_cars_set, F.text.casefold().contains("назад"))  # Обработка кнопки "Назад"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Admin_kbd)
-    await message.answer("Выберите вариант", reply_markup=hot_settings.as_markup(
-                            resize_keyboard=True))
-
-
-@admin_router.message(Statess.Popular_cars_set, F.text.casefold().contains("добавить"))  # Обработка кнопки "добавить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика добавления популярных авто*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-    
-@admin_router.message(Statess.Popular_cars_set, F.text.casefold().contains("удалить"))  # Обработка кнопки "удалить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика удаления авто популярных авто*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-########### Электромобили
-
-@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("популярные электромобили"))  # Обработка кнопки "Популярные электромобили"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Electrocars_set)
-    await message.answer("Изменение популярных электромобилей", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Electrocars_set, F.text.casefold().contains("назад"))  # Обработка кнопки "Назад"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Admin_kbd)
-    await message.answer("Выберите вариант", reply_markup=hot_settings.as_markup(
-                            resize_keyboard=True))
-    
-@admin_router.message(Statess.Electrocars_set, F.text.casefold().contains("добавить"))  # Обработка кнопки "добавить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика добавления популярных электромобилей*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-    
-@admin_router.message(Statess.Electrocars_set, F.text.casefold().contains("удалить"))  # Обработка кнопки "удалить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика удаления популярных электромобилей*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-
-########### Авто в пути
-
-@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("автомобили в пути"))  # Обработка кнопки "Автомобили в пути"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Cars_quee_set)
-    await message.answer("Изменение автомобилей в пути", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Cars_quee_set, F.text.casefold().contains("назад"))  # Обработка кнопки "Назад"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Admin_kbd)
-    await message.answer("Назад🔙", reply_markup=hot_settings.as_markup(
-                            resize_keyboard=True))
-
-
-@admin_router.message(Statess.Cars_quee_set, F.text.casefold().contains("добавить"))  # Обработка кнопки "добавить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика добавления автомобилей в пути*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-    
-@admin_router.message(Statess.Cars_quee_set, F.text.casefold().contains("удалить"))  # Обработка кнопки "удалить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика удаления автомобилей в пути*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-
-########### Авто в наличии
-
-@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("автомобили в наличии"))  # Обработка кнопки "Автомобили в наличии"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Сars_in_set)
-    await message.answer("Изменение автомобилей в наличии", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Сars_in_set, F.text.casefold().contains("назад"))  # Обработка кнопки "Назад"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await state.set_state(Statess.Admin_kbd)
-    await message.answer("Выберите вариант", reply_markup=hot_settings.as_markup(
-                            resize_keyboard=True))
-    
-
-@admin_router.message(Statess.Сars_in_set, F.text.casefold().contains("добавить"))  # Обработка кнопки "добавить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика добавления автомобилей в наличии*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-    
-@admin_router.message(Statess.Сars_in_set, F.text.casefold().contains("удалить"))  # Обработка кнопки "удалить"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика удаления автомобилей в наличии*", reply_markup=add_del_back_menu.as_markup(
-                            resize_keyboard=True))
-    
-
-
-
-
 
 
 

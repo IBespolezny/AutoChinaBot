@@ -46,7 +46,7 @@ question_menu.adjust(1,2)
 admin_menu = ReplyKeyboardBuilder()                          # Клавиатура Администратора
 admin_menu.add(
     KeyboardButton(text="Управление доступом"),
-    KeyboardButton(text="Горячие предложения"),
+    KeyboardButton(text="База автомобилей"),
     KeyboardButton(text="Частые вопросы"),
 )
 admin_menu.adjust(1,2)
@@ -81,16 +81,14 @@ manager_settings.add(
 manager_settings.adjust(2,2)
 
 
-hot_settings = ReplyKeyboardBuilder()                          # Клавиатура кнопки "Горячие предложения"
-hot_settings.add(
+auto_settings = ReplyKeyboardBuilder()                          # Клавиатура кнопки "База автомобилей"
+auto_settings.add(
     KeyboardButton(text="Назад🔙"),
-    KeyboardButton(text="Автомобили по стоимости"),
-    KeyboardButton(text="Популярные автомобили"),
-    KeyboardButton(text="Популярные электромобили"),
-    KeyboardButton(text="Автомобили в пути"),
-    KeyboardButton(text="Автомобили в наличии"),
+    KeyboardButton(text="Добавить автомобиль"),
+    KeyboardButton(text="Удалить автомобиль"),
+
 )
-hot_settings.adjust(2,2)
+auto_settings.adjust(2,2)
 
 
 add_del_back_menu = ReplyKeyboardBuilder()                          # Клавиатура Добавить/Удалить/Назад
