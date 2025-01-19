@@ -34,7 +34,7 @@ class Dialog(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     client_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=False)
     client_message_id: Mapped[int] = mapped_column(nullable=False)
-    manager_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    manager_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=False)
     manager_message_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
 

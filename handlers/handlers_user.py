@@ -202,7 +202,7 @@ async def hot_handler(message: types.Message, state: FSMContext, session: AsyncS
     )
     await bot.delete_message(message.chat.id, delmes.message_id)
     await message.answer(
-        f"Ваш вопрос:{message.text} \nотправлен менеджерам✅\nОжидайте ответ🕜\nЕсли вам нужно продолжить искать автомобиль, пока ожидаете ответ, используйте команду /start", 
+        f"Ваш вопрос:\n<b>{message.text}</b>\nотправлен менеджерам✅\nОжидайте ответ🕜\nЕсли вам нужно продолжить искать автомобиль, пока ожидаете ответ, используйте команду /start", 
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="Закончить диалог", callback_data=f"end_{mesID}")]
