@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_dialog_by_client_message, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_dialog_by_client_message, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -76,7 +76,17 @@ async def start_handler(message: types.Message, state: FSMContext) -> None:
                             resize_keyboard=True), parse_mode='HTML')
 
 
-
+@user_router_manager.message(StateFilter('*'), Command("test"))            # Очищает Машину состояний
+async def start_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
+    car = await orm_get_car(session, 1)
+    caption = (f'''
+{car.box}
+{car.car_id}
+{car.cost}
+{car.model}
+{car.foto}
+''')
+    await bot.send_photo(message.chat.id, car.foto, caption=caption)
 
 
 

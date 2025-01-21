@@ -197,7 +197,15 @@ async def orm_add_car(session: AsyncSession, new_car: dict):     # Добавл�
         engine_type=new_car["engine_type"],
         box=new_car["box"],
         foto=new_car["foto"],
+        electrocar=new_car["electrocar"],
+        cost=new_car["cost"],
         flag=new_car["flag"],
     )
     session.add(obj)
     await session.commit()
+
+
+async def orm_get_car(session: AsyncSession, car_id: int):             # Получение одного вопроса по id
+    query = select(Cars).where(Cars.car_id == car_id)
+    result = await session.execute(query)
+    return result.scalar()
