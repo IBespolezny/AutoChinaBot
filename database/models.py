@@ -38,3 +38,21 @@ class Dialog(Base):
     manager_message_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
 
+
+
+class Cars(Base):
+    __tablename__ = 'cars'
+
+    car_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    mark: Mapped[str] = mapped_column(String(150), nullable=False)
+    model: Mapped[str] = mapped_column(String(150), nullable=False)
+    year: Mapped[int] = mapped_column(nullable=False)
+    engine_volume: Mapped[float] = mapped_column(nullable=False)
+    places: Mapped[int] = mapped_column(nullable=False)
+    route: Mapped[float] = mapped_column(nullable=False)
+    engine_type: Mapped[str] = mapped_column(String(150), nullable=False)
+    box: Mapped[str] = mapped_column(String(150), nullable=False)
+    foto: Mapped[str] = mapped_column(String(300), nullable=False)
+    electrocar: Mapped[str] = mapped_column(String(300), nullable=False)
+    cost: Mapped[float] = mapped_column(nullable=False)
+    flag: Mapped[str] = mapped_column(String(150), nullable=False)

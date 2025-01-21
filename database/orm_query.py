@@ -1,7 +1,7 @@
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Admin, DefQuestion, Dialog, Manager
+from database.models import Admin, Cars, DefQuestion, Dialog, Manager
 
 ##############################   АДМИНИСТРАТОРЫ   #######################################
 
@@ -181,3 +181,23 @@ async def orm_delete_all_dialogs(session: AsyncSession) -> None:       # Уда�
     query = delete(Dialog)  # Создаем запрос на удаление всех записей из таблицы Dialog
     await session.execute(query)  # Выполняем запрос
     await session.commit()  # Подтверждаем изменения
+
+
+
+####################################### Добавление авто ################################
+
+async def orm_add_car(session: AsyncSession, new_car: dict):     # Добавление частого вопроса
+    obj = Cars(
+        mark=new_car["mark"],
+        model=new_car["model"],
+        year=new_car["year"],
+        engine_volume=new_car["engine_volume"],
+        places=new_car["places"],
+        route=new_car["route"],
+        engine_type=new_car["engine_type"],
+        box=new_car["box"],
+        foto=new_car["foto"],
+        flag=new_car["flag"],
+    )
+    session.add(obj)
+    await session.commit()

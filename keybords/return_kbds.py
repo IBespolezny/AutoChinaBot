@@ -83,9 +83,9 @@ manager_settings.adjust(2,2)
 
 auto_settings = ReplyKeyboardBuilder()                          # Клавиатура кнопки "База автомобилей"
 auto_settings.add(
-    KeyboardButton(text="Назад🔙"),
     KeyboardButton(text="Добавить автомобиль"),
     KeyboardButton(text="Удалить автомобиль"),
+    KeyboardButton(text="Назад🔙"),
 
 )
 auto_settings.adjust(2,2)
