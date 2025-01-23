@@ -148,6 +148,7 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
+    await message.delete()
     cars = await orm_get_car_by_flag(session, "Популярное")  # Получаем список машин с флагом "Популярное"
     if cars:
         for car in cars:
@@ -161,10 +162,16 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
                 f"⛽ **Тип двигателя:** {car.engine_type}\n"
                 f"🔧 **Тип коробки передач:** {car.box}\n"
                 f"🔋 **Электрокар:** {'Да' if car.electrocar == 'Да' else 'Нет'}\n"
-                f"💰 **Стоимость:** {car.cost:,} руб.\n"
+                f"💰 **Стоимость:** {car.cost:,} $.\n"
             )
             # Отправляем фото с текстом
-            await message.answer_photo(photo=car.foto, caption=car_info, parse_mode="Markdown")
+            await message.answer_photo(
+                photo=car.foto, 
+                caption=car_info, 
+                parse_mode="Markdown", 
+                reply_markup=get_callback_btns(btns={
+                'Заказать': f'get_',
+            }),)
     else:
         await message.answer("🚫 Популярные автомобили не найдены.")
 
