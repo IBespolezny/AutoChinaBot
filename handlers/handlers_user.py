@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_dialog_by_client_message, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_dialog_by_client_message, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -76,18 +76,6 @@ async def start_handler(message: types.Message, state: FSMContext) -> None:
                             resize_keyboard=True), parse_mode='HTML')
 
 
-@user_router_manager.message(StateFilter('*'), Command("test"))            # Очищает Машину состояний
-async def start_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
-    car = await orm_get_car(session, 1)
-    caption = (f'''
-{car.box}
-{car.car_id}
-{car.cost}
-{car.model}
-{car.foto}
-''')
-    await bot.send_photo(message.chat.id, car.foto, caption=caption)
-
 
 
 #######################################     Подобрать автомобиль    ###########################################
@@ -102,6 +90,7 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 async def hot_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
     mesID = message.message_id  # ID исходного сообщения клиента
     delmes = await message.answer("Поиск свободного менеджера...")
+
     await bot.send_message(chat_id=config.MANAGERS_GROUP_ID, text = "❓Вопрос от клиента")
     # Пересылаем сообщение клиента в группу менеджеров
     forwarded_message = await bot.forward_message(
@@ -158,8 +147,28 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 
 
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
-async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика поиска популярных автомобилей*")
+async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
+    cars = await orm_get_car_by_flag(session, "Популярное")  # Получаем список машин с флагом "Популярное"
+    if cars:
+        for car in cars:
+            car_info = (
+                f"🚗 **Марка:** {car.mark}\n"
+                f"📍 **Модель:** {car.model}\n"
+                f"📅 **Год выпуска:** {car.year}\n"
+                f"⚙️ **Объём двигателя:** {car.engine_volume} л\n"
+                f"👥 **Количество мест:** {car.places}\n"
+                f"🏁 **Пробег:** {car.route} км\n"
+                f"⛽ **Тип двигателя:** {car.engine_type}\n"
+                f"🔧 **Тип коробки передач:** {car.box}\n"
+                f"🔋 **Электрокар:** {'Да' if car.electrocar == 'Да' else 'Нет'}\n"
+                f"💰 **Стоимость:** {car.cost:,} руб.\n"
+            )
+            # Отправляем фото с текстом
+            await message.answer_photo(photo=car.foto, caption=car_info, parse_mode="Markdown")
+    else:
+        await message.answer("🚫 Популярные автомобили не найдены.")
+
+    
 
 @user_router_manager.message(F.text.casefold().contains("электроавтомобили"))
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
