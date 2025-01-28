@@ -214,3 +214,8 @@ async def orm_get_car_by_flag(session: AsyncSession, flag: str):             # �
     query = select(Cars).where(Cars.flag == flag)
     result = await session.execute(query)
     return result.scalars().all()
+
+async def orm_get_electrocars(session: AsyncSession):             # Получение одного вопроса по id
+    query = select(Cars).where(Cars.electrocar == "Да")
+    result = await session.execute(query)
+    return result.scalars().all()

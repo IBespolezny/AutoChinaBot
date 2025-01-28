@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_dialog_by_client_message, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -136,10 +136,7 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer("🚗Выберите тип автомобиля", reply_markup=hot_menu.as_markup(
                             resize_keyboard=True))
     
-@user_router_manager.message(F.text.casefold().contains("назад"))   # Логика Возврата в меню
-async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("Главное меню🔙", reply_markup=main_menu.as_markup(
-                            resize_keyboard=True))
+
     
 @user_router_manager.message(F.text.casefold().contains("подборка автомобилей по стоимости"))
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
@@ -148,7 +145,9 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
-    await message.delete()
+    await state.update_data(order_mes = message.message_id)
+    await state.update_data(order_chat = message.chat.id)
+
     cars = await orm_get_car_by_flag(session, "Популярное")  # Получаем список машин с флагом "Популярное"
     if cars:
         for car in cars:
@@ -164,13 +163,16 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
                 f"🔋 **Электрокар:** {'Да' if car.electrocar == 'Да' else 'Нет'}\n"
                 f"💰 **Стоимость:** {car.cost:,} $.\n"
             )
+            car_id = car.car_id
             # Отправляем фото с текстом
             await message.answer_photo(
                 photo=car.foto, 
                 caption=car_info, 
                 parse_mode="Markdown", 
                 reply_markup=get_callback_btns(btns={
-                'Заказать': f'get_',
+                '⬅️': f'left_{car_id}',
+                '➡️': f'right_{car_id}',
+                'Заказать в один клик': f'get_{car_id}',
             }),)
     else:
         await message.answer("🚫 Популярные автомобили не найдены.")
@@ -178,16 +180,174 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
     
 
 @user_router_manager.message(F.text.casefold().contains("электроавтомобили"))
-async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика подбора электромобилей*")
+async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
+    await state.update_data(order_mes = message.message_id)
+    await state.update_data(order_chat = message.chat.id)
+
+    cars = await orm_get_electrocars(session)  # Получаем список машин с флагом "Популярное"
+    if cars:
+        for car in cars:
+            car_info = (
+                f"🚗 **Марка:** {car.mark}\n"
+                f"📍 **Модель:** {car.model}\n"
+                f"📅 **Год выпуска:** {car.year}\n"
+                f"🔋 **Емкость батареи:** {car.engine_volume} л\n"
+                f"👥 **Количество мест:** {car.places}\n"
+                f"🏁 **Пробег:** {car.route} км\n"
+                f"⛽ **Тип двигателя:** {car.engine_type}\n"
+                f"🔧 **Тип коробки передач:** {car.box}\n"
+                f"💰 **Стоимость:** {car.cost:,} $\n"
+            )
+            car_id = car.car_id
+            # Отправляем фото с текстом
+            await message.answer_photo(
+                photo=car.foto, 
+                caption=car_info, 
+                parse_mode="Markdown", 
+                reply_markup=get_callback_btns(btns={
+                'Заказать в один клик ': f'get_{car_id}',
+            }),)
+
+    else:
+        await message.answer("🚫 Электромобили не найдены автомобили не найдены.")
+
 
 @user_router_manager.message(F.text.casefold().contains("автомобили в пути"))
-async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика автомобилей в пути*")
+async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
+    await state.update_data(order_mes = message.message_id)
+    await state.update_data(order_chat = message.chat.id)
+
+    cars = await orm_get_car_by_flag(session, "В пути")  # Получаем список машин с флагом "В пути"
+    if cars:
+        for car in cars:
+            car_info = (
+                f"🚗 **Марка:** {car.mark}\n"
+                f"📍 **Модель:** {car.model}\n"
+                f"📅 **Год выпуска:** {car.year}\n"
+                f"🔋 **Объём двигателя:** {car.engine_volume} л\n"
+                f"👥 **Количество мест:** {car.places}\n"
+                f"🏁 **Пробег:** {car.route} км\n"
+                f"⛽ **Тип двигателя:** {car.engine_type}\n"
+                f"🔧 **Тип коробки передач:** {car.box}\n"
+                f"💰 **Стоимость:** {car.cost:,} $\n"
+            )
+            car_id = car.car_id
+            # Отправляем фото с текстом
+            await message.answer_photo(
+                photo=car.foto, 
+                caption=car_info, 
+                parse_mode="Markdown", 
+                reply_markup=get_callback_btns(btns={
+                'Заказать в один клик ': f'get_{car_id}',
+            }),)
+
+    else:
+        await message.answer("🚫 Автомобилей в пути нет")
+
 
 @user_router_manager.message(F.text.casefold().contains("автомобили в наличии"))
+async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
+    await state.update_data(order_mes = message.message_id)
+    await state.update_data(order_chat = message.chat.id)
+
+    cars = await orm_get_car_by_flag(session, "В наличии")  # Получаем список машин с флагом "В наличии"
+    if cars:
+        for car in cars:
+            car_info = (
+                f"🚗 **Марка:** {car.mark}\n"
+                f"📍 **Модель:** {car.model}\n"
+                f"📅 **Год выпуска:** {car.year}\n"
+                f"🔋 **Объём двигателя:** {car.engine_volume} л\n"
+                f"👥 **Количество мест:** {car.places}\n"
+                f"🏁 **Пробег:** {car.route} км\n"
+                f"⛽ **Тип двигателя:** {car.engine_type}\n"
+                f"🔧 **Тип коробки передач:** {car.box}\n"
+                f"💰 **Стоимость:** {car.cost:,} $\n"
+            )
+            car_id = car.car_id
+            # Отправляем фото с текстом
+            await message.answer_photo(
+                photo=car.foto, 
+                caption=car_info, 
+                parse_mode="Markdown", 
+                reply_markup=get_callback_btns(btns={
+                'Заказать в один клик ': f'get_{car_id}',
+                
+            }),)
+
+    else:
+        await message.answer("🚫 Автомобилей в пути нет")
+
+
+@user_router_manager.message(F.text.casefold().contains("назад"))   # Логика Возврата в меню
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика подбора автомобилей в наличии*")
+    await message.answer("Главное меню🔙", reply_markup=main_menu.as_markup(
+                            resize_keyboard=True))
+    
+
+
+@user_router_manager.callback_query(F.data.startswith("get_"))   # Логика Возврата в меню
+async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, state: FSMContext) -> None:
+    mesID = callback.message.message_id
+
+    vokeb = await state.get_data()
+    order_mes = vokeb.get("order_mes")
+    order_chat = vokeb.get("order_chat")
+
+    car_id = int(callback.data.split("_", 1)[1])
+
+    car = await orm_get_car(session, car_id)
+
+    car_info = (
+                f"🚗 **Марка:** {car.mark}\n"
+                f"📍 **Модель:** {car.model}\n"
+                f"📅 **Год выпуска:** {car.year}\n"
+                f"🔋 **Емкость батареи:** {car.engine_volume} л\n"
+                f"👥 **Количество мест:** {car.places}\n"
+                f"🏁 **Пробег:** {car.route} км\n"
+                f"⛽ **Тип двигателя:** {car.engine_type}\n"
+                f"🔧 **Тип коробки передач:** {car.box}\n"
+                f"💰 **Стоимость:** {car.cost:,} $\n"
+            )
+
+    await bot.edit_message_caption(
+        callback.message.chat.id,
+        mesID,
+       caption = f'''
+Ваш заказ отправлен менеджерам на обработку
+Среднее время ожидания 5-10 минут 🕝
+''',
+        
+        
+        # reply_markup=get_callback_btns(btns={
+        #         'Не ждать': f'end_{order_mes}',}),
+        parse_mode='HTML'
+    )
+
+    await bot.send_message(
+        config.MANAGERS_GROUP_ID,
+        f'''
+Заказ автомобиля #️⃣{car_id}
+
+{car_info}
+''',
+       parse_mode='Markdown' 
+    )
+
+    forwarded_message = await bot.forward_message(
+        chat_id=config.MANAGERS_GROUP_ID, 
+        from_chat_id=callback.message.chat.id, 
+        message_id=order_mes
+    )
+    
+    # Добавляем диалог в базу данных, используя ID пересланного сообщения
+    await orm_add_dialog(
+        session, 
+        client_id=order_chat, 
+        client_message_id=forwarded_message.message_id  # ID пересланного сообщения
+    )
+
+
 
 
 
@@ -286,9 +446,9 @@ async def start_handler(callback: types.CallbackQuery, state: FSMContext, sessio
 
     await callback.message.delete()
     user_id = callback.message.chat.id
-    delmes = int(callback.data.removeprefix("end_"))
+    # delmes = int(callback.data.removeprefix("end_"))
 
-    await bot.delete_message(callback.message.chat.id, delmes)
+    # await bot.delete_message(callback.message.chat.id, delmes)
     # Завершаем диалог
     await orm_end_dialog(session, client_id=user_id)
     await callback.message.answer("Диалог завершён!", reply_markup=main_menu.as_markup(
