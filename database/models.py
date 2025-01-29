@@ -46,13 +46,18 @@ class Cars(Base):
     car_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     mark: Mapped[str] = mapped_column(String(150), nullable=False)
     model: Mapped[str] = mapped_column(String(150), nullable=False)
-    package: Mapped[str] = mapped_column(String(150), nullable=False)
+    package: Mapped[str] = mapped_column(String(150), nullable=False)   # Комплектакция
+    body: Mapped[str] = mapped_column(String(150), nullable=False)   # Кузов
     year: Mapped[int] = mapped_column(nullable=False)
     cost: Mapped[float] = mapped_column(nullable=False)
-    engine_type: Mapped[str] = mapped_column(String(150), nullable=False)
-    engine_volume: Mapped[float] = mapped_column(nullable=False)
-    weel_drive: Mapped[str] = mapped_column(String(150), nullable=False)
-    route: Mapped[float] = mapped_column(nullable=False)    
-    foto: Mapped[str] = mapped_column(String(300), nullable=False)
-    electrocar: Mapped[str] = mapped_column(String(300), nullable=False)
-    flag: Mapped[str] = mapped_column(String(150), nullable=False)
+    engine_type: Mapped[str] = mapped_column(String(150), nullable=False)    # Тип топлива
+    weel_drive: Mapped[str] = mapped_column(String(150), nullable=False)    # Привод
+    flag: Mapped[str] = mapped_column(String(150), nullable=False)              # Флаг для поиска в БД
+    electrocar: Mapped[str] = mapped_column(String(300), nullable=False)     # Электромобиль?
+    engine_volume: Mapped[float] = mapped_column(nullable=True)            # Объём двигателя (только ДВС)
+    power: Mapped[float] = mapped_column(nullable=True)                     # Мощность (только для электрокаров) 
+    power_bank: Mapped[float] = mapped_column(nullable=True)                # Батарея (только для электрокаров) 
+    route: Mapped[float] = mapped_column(nullable=False)                     # Пробег или запас хода (ДВС)_(электрокар)
+    photo: Mapped[str] = mapped_column(String(300), nullable=False)            # Фото
+    
+    

@@ -190,16 +190,19 @@ async def orm_add_car(session: AsyncSession, new_car: dict):     # Добавл�
     obj = Cars(
         mark=new_car["mark"],
         model=new_car["model"],
+        package=new_car["package"],
         year=new_car["year"],
-        engine_volume=new_car["engine_volume"],
-        places=new_car["places"],
-        route=new_car["route"],
-        engine_type=new_car["engine_type"],
-        box=new_car["box"],
-        foto=new_car["foto"],
-        electrocar=new_car["electrocar"],
         cost=new_car["cost"],
+        engine_type=new_car["engine_type"],
+        weel_drive=new_car["weel_drive"],
         flag=new_car["flag"],
+        electrocar=new_car["electrocar"],
+        engine_volume=new_car["engine_volume"],
+        power=new_car["power"],
+        power_bank=new_car["power_bank"],
+        route=new_car["route"],
+        photo=new_car["photo"],
+        body=new_car["body"],
     )
     session.add(obj)
     await session.commit()
