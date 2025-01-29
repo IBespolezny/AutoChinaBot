@@ -3,7 +3,9 @@ import asyncio
 
 from config import API_TOKEN
 
-from database.engine import create_db, drop_db, session_maker
+from database.engine import create_db, drop_db, session_maker, engine
+from database.models import Admin, Cars, DefQuestion, Dialog, Manager
+from functions.functions import create_specific_table
 from handlers.handlers_user import user_router_manager
 from handlers.handlers_admin import admin_router
 from handlers.handlers_group import managers_group_router
@@ -39,10 +41,11 @@ commands_group = [
 
 async def on_startup(bot):
 
-    run_param = False
-    if run_param:
-        await drop_db()
-    await create_db()
+    await create_specific_table(engine, Cars)
+    await create_specific_table(engine, Dialog)
+    await create_specific_table(engine, DefQuestion)
+    await create_specific_table(engine, Manager)
+    await create_specific_table(engine, Admin)
 
 async def on_shutdown(bot):
     print("бот закончил работу")
@@ -54,7 +57,6 @@ async def main():
 
     dp.update.middleware(DataBaseSession(session_pool=session_maker))
 
-    await create_db()
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_my_commands(commands, scope=types.BotCommandScopeAllPrivateChats())
     await bot.set_my_commands(commands_group, scope=types.BotCommandScopeAllGroupChats())
