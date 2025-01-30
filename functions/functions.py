@@ -37,3 +37,12 @@ async def create_specific_table(engine: AsyncEngine, table: Base):
                 print(f"Таблица '{table_name}' уже существует.")
     except Exception as e:
         print(f"Ошибка при создании таблицы {table_name}: {e}")
+
+
+def format_number(value):
+    if not isinstance(value, (int, float)):
+        raise ValueError("Входное значение должно быть int или float")
+    
+    if isinstance(value, float):
+        return f"{value:,.2f}".replace(",", " ").replace(".", ",")
+    return f"{value:,}".replace(",", " ")

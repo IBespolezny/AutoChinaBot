@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 # from keybords.inline_kbds import get_callback_btns
+from functions.functions import format_number
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row
 from keybords.return_kbds import main_menu, hot_menu, question_menu
 
@@ -51,6 +52,7 @@ class Statess(StatesGroup):
     route = State()                              # Добавление года авто
     engine_type = State()                              # Добавление года авто
     power = State()                              # Добавление года авто
+    power_engin = State()                              # Добавление года авто
     photo = State()                              # Добавление года авто
     flag = State()                              # Добавление года авто
     electrocar = State()                              # Добавление года авто
@@ -58,6 +60,7 @@ class Statess(StatesGroup):
     power_bank = State()                              # Добавление года авто
     package = State()                              # Добавление года авто
     body = State()                              # Добавление года авто
+    power_reserve = State()                              # Добавление года авто
 
 
 #######################################  Фильтр групп   #########################################
@@ -148,38 +151,72 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
-    await state.update_data(order_mes = message.message_id)
-    await state.update_data(order_chat = message.chat.id)
-
-    cars = await orm_get_car_by_flag(session, "Популярное")  # Получаем список машин с флагом "Популярное"
+    await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    
+    cars = await orm_get_car_by_flag(session, "Популярное")
     if cars:
-        for car in cars:
+        await state.update_data(cars_list=cars, current_index=0)
+        car = cars[0]
+        if car.electrocar == "yes":
             car_info = (
-                f"🚗 **Марка:** {car.mark}\n"
-                f"📍 **Модель:** {car.model}\n"
-                f"📅 **Год выпуска:** {car.year}\n"
-                f"⚙️ **Объём двигателя:** {car.engine_volume} л\n"
-                f"👥 **Количество мест:** {car.places}\n"
-                f"🏁 **Пробег:** {car.route} км\n"
-                f"⛽ **Тип двигателя:** {car.engine_type}\n"
-                f"🔧 **Тип коробки передач:** {car.box}\n"
-                f"🔋 **Электрокар:** {'Да' if car.electrocar == 'Да' else 'Нет'}\n"
-                f"💰 **Стоимость:** {car.cost:,} $.\n"
-            )
-            car_id = car.car_id
-            # Отправляем фото с текстом
-            await message.answer_photo(
-                photo=car.foto, 
-                caption=car_info, 
-                parse_mode="Markdown", 
-                reply_markup=get_callback_btns(btns={
-                '⬅️': f'left_{car_id}',
-                '➡️': f'right_{car_id}',
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
+📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
+
+Контакты менеджеров
+📱 @PabloXP, @vonilam 
+🇧🇾 +375 44 599 22 22
+🇷🇺 +7 980 218 36 22
+'''
+        )
+        elif car.electrocar == "no":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
+📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
+
+Контакты менеджеров
+📱 @PabloXP, @vonilam 
+🇧🇾 +375 44 599 22 22
+🇷🇺 +7 980 218 36 22
+'''
+        )
+        car_id = car.car_id
+        send_message = await message.answer_photo(
+            photo=car.photo,
+            caption=car_info,
+            parse_mode="Markdown",
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
-            }),)
+            }),
+        )
+        await state.update_data(send_message=send_message.message_id)
     else:
         await message.answer("🚫 Популярные автомобили не найдены.")
-
     
 
 @user_router_manager.message(F.text.casefold().contains("электроавтомобили"))
@@ -287,6 +324,153 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer("Главное меню🔙", reply_markup=main_menu.as_markup(
                             resize_keyboard=True))
     
+
+
+
+
+@user_router_manager.callback_query(F.data.startswith("right"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cars = data.get("cars_list", [])
+    index = data.get("current_index", 0)
+    message_id = data.get("send_message")
+    chat_id = data.get("order_chat")
+    
+    if cars:
+        index = (index + 1) % len(cars)
+        await state.update_data(current_index=index)
+        car = cars[index]
+        if car.electrocar == "yes":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
+📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
+
+Контакты менеджеров
+📱 @PabloXP, @vonilam 
+🇧🇾 +375 44 599 22 22
+🇷🇺 +7 980 218 36 22
+'''
+        )
+        elif car.electrocar == "no":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
+📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
+
+Контакты менеджеров
+📱 @PabloXP, @vonilam 
+🇧🇾 +375 44 599 22 22
+🇷🇺 +7 980 218 36 22
+'''
+        )
+        car_id = car.car_id
+        await callback.bot.edit_message_media(
+            media=types.InputMediaPhoto(media=car.photo, caption=car_info, parse_mode="Markdown"),
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            })
+        )
+    await callback.answer()
+
+
+@user_router_manager.callback_query(F.data.startswith("left"))
+async def prev_car(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cars = data.get("cars_list", [])
+    index = data.get("current_index", 0)
+    message_id = data.get("send_message")
+    chat_id = data.get("order_chat")
+    
+    if cars:
+        index = (index - 1) % len(cars)
+        await state.update_data(current_index=index)
+        car = cars[index]
+        if car.electrocar == "yes":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
+📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
+
+Контакты менеджеров
+📱 @PabloXP, @vonilam 
+🇧🇾 +375 44 599 22 22
+🇷🇺 +7 980 218 36 22
+'''
+        )
+        elif car.electrocar == "no":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
+📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
+
+Контакты менеджеров
+📱 @PabloXP, @vonilam 
+🇧🇾 +375 44 599 22 22
+🇷🇺 +7 980 218 36 22
+'''
+        )
+        car_id = car.car_id
+        await callback.bot.edit_message_media(
+            media=types.InputMediaPhoto(media=car.photo, caption=car_info, parse_mode="Markdown"),
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            })
+        )
+    await callback.answer()
+
 
 
 @user_router_manager.callback_query(F.data.startswith("get_"))   # Логика Возврата в меню

@@ -34,7 +34,7 @@ class Dialog(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     client_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=False)
     client_message_id: Mapped[int] = mapped_column(nullable=False)
-    manager_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=False)
+    manager_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=True)
     manager_message_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
 
@@ -55,8 +55,9 @@ class Cars(Base):
     flag: Mapped[str] = mapped_column(String(150), nullable=False)              # Флаг для поиска в БД
     electrocar: Mapped[str] = mapped_column(String(300), nullable=False)     # Электромобиль?
     engine_volume: Mapped[float] = mapped_column(nullable=True)            # Объём двигателя (только ДВС)
-    power: Mapped[float] = mapped_column(nullable=True)                     # Мощность (только для электрокаров) 
+    power: Mapped[float] = mapped_column(nullable=False)                     # Мощность (только для электрокаров) 
     power_bank: Mapped[float] = mapped_column(nullable=True)                # Батарея (только для электрокаров) 
+    power_reserve: Mapped[float] = mapped_column(nullable=True)                # Батарея (только для электрокаров) 
     route: Mapped[float] = mapped_column(nullable=False)                     # Пробег или запас хода (ДВС)_(электрокар)
     photo: Mapped[str] = mapped_column(String(300), nullable=False)            # Фото
     

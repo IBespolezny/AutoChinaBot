@@ -203,6 +203,7 @@ async def orm_add_car(session: AsyncSession, new_car: dict):     # Добавл�
         route=new_car["route"],
         photo=new_car["photo"],
         body=new_car["body"],
+        power_reserve=new_car["power_reserve"],
     )
     session.add(obj)
     await session.commit()
