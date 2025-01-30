@@ -501,18 +501,18 @@ async def choos_engine_type(callback: types.CallbackQuery, state: FSMContext, se
         callback.message.chat.id, 
         mes, 
         reply_markup=get_custom_callback_btns(btns={
-                'Популярный 🔥': 'Популярное',
-                'В пути 🗺️': 'автомобили в пути',
-                'В наличии 🏁': 'автомобили в наличии',
+                'Популярный 🔥': 'популярные',
+                'В пути 🗺️': 'в пути',
+                'В наличии 🏁': 'в наличии',
                 '❌': 'нет',
                 '🔙 Назад': 'back_to_weel_drive',
             }, layout=[2,2,1]
             ),)
 
 
-@admin_router.callback_query(F.data.startswith("Популярное"))
-@admin_router.callback_query(F.data.startswith("автомобили в пути"))
-@admin_router.callback_query(F.data.startswith("автомобили в наличии"))
+@admin_router.callback_query(F.data.startswith("популярные"))
+@admin_router.callback_query(F.data.startswith("в пути"))
+@admin_router.callback_query(F.data.startswith("в наличии"))
 @admin_router.callback_query(F.data.startswith("нет"))
 async def choos_engine_type(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
 
@@ -914,9 +914,9 @@ async def back_to_power(callback: types.CallbackQuery, state: FSMContext) -> Non
         callback.message.chat.id, 
         mesID, 
         reply_markup=get_custom_callback_btns(btns={
-                'Популярный 🔥': 'Популярное',
-                'В пути 🗺️': 'автомобили в пути',
-                'В наличии 🏁': 'автомобили в наличии',
+                'Популярный 🔥': 'популярные',
+                'В пути 🗺️': 'в пути',
+                'В наличии 🏁': 'в наличии',
                 '❌': 'нет',
                 '🔙 Назад': 'back_to_weel_drive',
             }, layout=[2,2,1]

@@ -152,8 +152,12 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
     await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    vokeb = await state.get_data()
+    del_mes = vokeb.get("send_message")
+    if del_mes:
+        await bot.delete_message(message.chat.id, del_mes)
     
-    cars = await orm_get_car_by_flag(session, "Популярное")
+    cars = await orm_get_car_by_flag(session, "популярные")
     if cars:
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
@@ -171,13 +175,6 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 
-📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
-📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
-
-Контакты менеджеров
-📱 @PabloXP, @vonilam 
-🇧🇾 +375 44 599 22 22
-🇷🇺 +7 980 218 36 22
 '''
         )
         elif car.electrocar == "no":
@@ -194,13 +191,6 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 
-📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
-📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
-
-Контакты менеджеров
-📱 @PabloXP, @vonilam 
-🇧🇾 +375 44 599 22 22
-🇷🇺 +7 980 218 36 22
 '''
         )
         car_id = car.car_id
@@ -221,108 +211,167 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 
 @user_router_manager.message(F.text.casefold().contains("электроавтомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
-    await state.update_data(order_mes = message.message_id)
-    await state.update_data(order_chat = message.chat.id)
-
-    cars = await orm_get_electrocars(session)  # Получаем список машин с флагом "Популярное"
+    await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    vokeb = await state.get_data()
+    del_mes = vokeb.get("send_message")
+    if del_mes:
+        await bot.delete_message(message.chat.id, del_mes)
+    
+    cars = await orm_get_electrocars(session)
     if cars:
-        for car in cars:
-            car_info = (
-                f"🚗 **Марка:** {car.mark}\n"
-                f"📍 **Модель:** {car.model}\n"
-                f"📅 **Год выпуска:** {car.year}\n"
-                f"🔋 **Емкость батареи:** {car.engine_volume} л\n"
-                f"👥 **Количество мест:** {car.places}\n"
-                f"🏁 **Пробег:** {car.route} км\n"
-                f"⛽ **Тип двигателя:** {car.engine_type}\n"
-                f"🔧 **Тип коробки передач:** {car.box}\n"
-                f"💰 **Стоимость:** {car.cost:,} $\n"
-            )
-            car_id = car.car_id
-            # Отправляем фото с текстом
-            await message.answer_photo(
-                photo=car.foto, 
-                caption=car_info, 
-                parse_mode="Markdown", 
-                reply_markup=get_callback_btns(btns={
-                'Заказать в один клик ': f'get_{car_id}',
-            }),)
+        await state.update_data(cars_list=cars, current_index=0)
+        car = cars[0]
 
+        car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+
+        car_id = car.car_id
+        send_message = await message.answer_photo(
+            photo=car.photo,
+            caption=car_info,
+            parse_mode="Markdown",
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }),
+        )
+        await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Электромобили не найдены автомобили не найдены.")
+        await message.answer("🚫 Электроавтомобили в пути не найдены.")
 
 
 @user_router_manager.message(F.text.casefold().contains("автомобили в пути"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
-    await state.update_data(order_mes = message.message_id)
-    await state.update_data(order_chat = message.chat.id)
-
-    cars = await orm_get_car_by_flag(session, "В пути")  # Получаем список машин с флагом "В пути"
+    await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    vokeb = await state.get_data()
+    del_mes = vokeb.get("send_message")
+    if del_mes:
+        await bot.delete_message(message.chat.id, del_mes)
+    
+    cars = await orm_get_car_by_flag(session, "в пути")
     if cars:
-        for car in cars:
+        await state.update_data(cars_list=cars, current_index=0)
+        car = cars[0]
+        if car.electrocar == "yes":
             car_info = (
-                f"🚗 **Марка:** {car.mark}\n"
-                f"📍 **Модель:** {car.model}\n"
-                f"📅 **Год выпуска:** {car.year}\n"
-                f"🔋 **Объём двигателя:** {car.engine_volume} л\n"
-                f"👥 **Количество мест:** {car.places}\n"
-                f"🏁 **Пробег:** {car.route} км\n"
-                f"⛽ **Тип двигателя:** {car.engine_type}\n"
-                f"🔧 **Тип коробки передач:** {car.box}\n"
-                f"💰 **Стоимость:** {car.cost:,} $\n"
-            )
-            car_id = car.car_id
-            # Отправляем фото с текстом
-            await message.answer_photo(
-                photo=car.foto, 
-                caption=car_info, 
-                parse_mode="Markdown", 
-                reply_markup=get_callback_btns(btns={
-                'Заказать в один клик ': f'get_{car_id}',
-            }),)
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
 
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+        elif car.electrocar == "no":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+        car_id = car.car_id
+        send_message = await message.answer_photo(
+            photo=car.photo,
+            caption=car_info,
+            parse_mode="Markdown",
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }),
+        )
+        await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Автомобилей в пути нет")
+        await message.answer("🚫 Автомобили в пути не найдены.")
 
 
 @user_router_manager.message(F.text.casefold().contains("автомобили в наличии"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
-    await state.update_data(order_mes = message.message_id)
-    await state.update_data(order_chat = message.chat.id)
-
-    cars = await orm_get_car_by_flag(session, "В наличии")  # Получаем список машин с флагом "В наличии"
+    await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    vokeb = await state.get_data()
+    del_mes = vokeb.get("send_message")
+    if del_mes:
+        await bot.delete_message(message.chat.id, del_mes)
+        
+    cars = await orm_get_car_by_flag(session, "в наличии")
     if cars:
-        for car in cars:
+        await state.update_data(cars_list=cars, current_index=0)
+        car = cars[0]
+        if car.electrocar == "yes":
             car_info = (
-                f"🚗 **Марка:** {car.mark}\n"
-                f"📍 **Модель:** {car.model}\n"
-                f"📅 **Год выпуска:** {car.year}\n"
-                f"🔋 **Объём двигателя:** {car.engine_volume} л\n"
-                f"👥 **Количество мест:** {car.places}\n"
-                f"🏁 **Пробег:** {car.route} км\n"
-                f"⛽ **Тип двигателя:** {car.engine_type}\n"
-                f"🔧 **Тип коробки передач:** {car.box}\n"
-                f"💰 **Стоимость:** {car.cost:,} $\n"
-            )
-            car_id = car.car_id
-            # Отправляем фото с текстом
-            await message.answer_photo(
-                photo=car.foto, 
-                caption=car_info, 
-                parse_mode="Markdown", 
-                reply_markup=get_callback_btns(btns={
-                'Заказать в один клик ': f'get_{car_id}',
-                
-            }),)
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
 
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+        elif car.electrocar == "no":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+        car_id = car.car_id
+        send_message = await message.answer_photo(
+            photo=car.photo,
+            caption=car_info,
+            parse_mode="Markdown",
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }),
+        )
+        await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Автомобилей в пути нет")
-
-
-@user_router_manager.message(F.text.casefold().contains("назад"))   # Логика Возврата в меню
-async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("Главное меню🔙", reply_markup=main_menu.as_markup(
-                            resize_keyboard=True))
+        await message.answer("🚫 Автомобили в наличии не найдены.")
     
 
 
@@ -354,13 +403,6 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 
-📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
-📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
-
-Контакты менеджеров
-📱 @PabloXP, @vonilam 
-🇧🇾 +375 44 599 22 22
-🇷🇺 +7 980 218 36 22
 '''
         )
         elif car.electrocar == "no":
@@ -377,13 +419,6 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 
-📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
-📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
-
-Контакты менеджеров
-📱 @PabloXP, @vonilam 
-🇧🇾 +375 44 599 22 22
-🇷🇺 +7 980 218 36 22
 '''
         )
         car_id = car.car_id
@@ -426,13 +461,6 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 
-📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
-📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
-
-Контакты менеджеров
-📱 @PabloXP, @vonilam 
-🇧🇾 +375 44 599 22 22
-🇷🇺 +7 980 218 36 22
 '''
         )
         elif car.electrocar == "no":
@@ -449,13 +477,6 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 
-📷 Больше фото (https://by.ev.wiki/ru/offers/27392)
-📝 Все характеристики (https://by.ev.wiki/ru/offers/27392/full-specs)
-
-Контакты менеджеров
-📱 @PabloXP, @vonilam 
-🇧🇾 +375 44 599 22 22
-🇷🇺 +7 980 218 36 22
 '''
         )
         car_id = car.car_id
@@ -484,30 +505,43 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
     car_id = int(callback.data.split("_", 1)[1])
 
     car = await orm_get_car(session, car_id)
+    if car.electrocar == "yes":
+        car_info = (f'''
+{car.mark} {car.model} {car.package}, {car.year} год
 
-    car_info = (
-                f"🚗 **Марка:** {car.mark}\n"
-                f"📍 **Модель:** {car.model}\n"
-                f"📅 **Год выпуска:** {car.year}\n"
-                f"🔋 **Емкость батареи:** {car.engine_volume} л\n"
-                f"👥 **Количество мест:** {car.places}\n"
-                f"🏁 **Пробег:** {car.route} км\n"
-                f"⛽ **Тип двигателя:** {car.engine_type}\n"
-                f"🔧 **Тип коробки передач:** {car.box}\n"
-                f"💰 **Стоимость:** {car.cost:,} $\n"
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+'''                       
+            )
+        
+    if car.electrocar == "no":
+        car_info = (f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+'''                       
             )
 
     await bot.edit_message_caption(
         callback.message.chat.id,
         mesID,
-       caption = f'''
+        caption = f'''
 Ваш заказ отправлен менеджерам на обработку
 Среднее время ожидания 5-10 минут 🕝
-''',
-        
-        
-        # reply_markup=get_callback_btns(btns={
-        #         'Не ждать': f'end_{order_mes}',}),
+''', 
         parse_mode='HTML'
     )
 
@@ -515,10 +549,9 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
         config.MANAGERS_GROUP_ID,
         f'''
 Заказ автомобиля #️⃣{car_id}
-
 {car_info}
 ''',
-       parse_mode='Markdown' 
+       parse_mode='HTML' 
     )
 
     forwarded_message = await bot.forward_message(
