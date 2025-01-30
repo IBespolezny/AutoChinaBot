@@ -98,3 +98,27 @@ add_del_back_menu.add(
     KeyboardButton(text="Назад🔙"),
 )
 add_del_back_menu.adjust(2,1)
+
+
+region_menu = ReplyKeyboardBuilder()                          # Клавиатура Добавить/Удалить/Назад
+region_menu.add(
+    KeyboardButton(text="🇧🇾 РБ"),
+    KeyboardButton(text="🇷🇺 РФ"),
+)
+add_del_back_menu.adjust(2)
+
+
+engine_menu = ReplyKeyboardBuilder()                          # Клавиатура Добавить/Удалить/Назад
+engine_menu.add(
+    KeyboardButton(text="ДВС"),
+    KeyboardButton(text="Электрический"),
+)
+add_del_back_menu.adjust(2)
+
+
+old_or_new_menu = ReplyKeyboardBuilder()                          # Клавиатура Добавить/Удалить/Назад
+old_or_new_menu.add(
+    KeyboardButton(text="Новый"),
+    KeyboardButton(text="Б/У"),
+)
+add_del_back_menu.adjust(2)

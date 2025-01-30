@@ -6,7 +6,11 @@ DB_POSTGRE = "postgresql+asyncpg://bot:121212@localhost:5432/bot" # Путь д�
 
 MANAGERS_GROUP_ID = -4752773044
 
+WAIT_MESSAGE = '''
+Ответы записаны ✍️
 
+Ожидайте ответа менеджера, в среднем ожидания составляют 5-10 минут 🕛
+'''
 
 START_MESSAGE = '''<b>Добро пожаловать в VV Auto Bot! 🚗🇨🇳</b>  
 

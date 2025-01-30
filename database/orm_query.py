@@ -1,4 +1,5 @@
 from sqlalchemy import select, update, delete
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import Admin, Cars, DefQuestion, Dialog, Manager
@@ -223,3 +224,25 @@ async def orm_get_electrocars(session: AsyncSession):             # Получе
     query = select(Cars).where(Cars.electrocar == "yes")
     result = await session.execute(query)
     return result.scalars().all()
+
+
+async def orm_get_cars_by_cost(session: AsyncSession, min_value: float, max_value: float):
+    """Получение списка автомобилей в заданном диапазоне цен."""
+    query = select(Cars).where(Cars.cost.between(min_value, max_value))
+    result = await session.execute(query)
+    cars = result.scalars().all()
+    
+    return cars
+
+
+################### Удаление авто ##########################
+
+async def orm_delete_car(session: AsyncSession, car_id: int) -> bool:
+    """Удаляет автомобиль из базы данных по его ID."""
+    try:
+        await session.execute(delete(Cars).where(Cars.car_id == car_id))
+        await session.commit()
+        return True
+    except SQLAlchemyError:
+        await session.rollback()
+        return False

@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -18,7 +18,7 @@ from sqlalchemy.future import select
 # from keybords.inline_kbds import get_callback_btns
 from functions.functions import format_number
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row
-from keybords.return_kbds import main_menu, hot_menu, question_menu
+from keybords.return_kbds import main_menu, hot_menu, question_menu, region_menu, engine_menu, old_or_new_menu
 
 #######################################  Класс состояний  ###################################################
 
@@ -41,8 +41,11 @@ class Statess(StatesGroup):
     DefQuestion_set = State()                   # Состояние клавиатуры частого вопроса
     add_DefAnswer = State()                     # Состояние добавления частого ответа
     DefQuestion_add = State()                   # Состояние добавления частого вопроса
+    delete_auto = State()                   # Состояние добавления частого вопроса
     ask_question = State()                      # Состояние записи вопроса для менеджера
     consultation = State()                      # Состояние формирования заказа
+
+    choos_region = State()                      # Состояние формирования заказа
 
     Mark = State()                              # Добавление марки авто
     Model = State()                              # Добавление модели авто
@@ -82,22 +85,63 @@ async def start_handler(message: types.Message, state: FSMContext) -> None:
                             resize_keyboard=True), parse_mode='HTML')
 
 
+@user_router_manager.message(F.text.casefold().contains("назад"))  # Обработка кнопки "назад"
+async def cancel_handler(message: types.Message, state: FSMContext) -> None:
 
+    await message.answer("Главное меню🔙", reply_markup=main_menu.as_markup(
+                            resize_keyboard=True))
 
 #######################################     Подобрать автомобиль    ###########################################
 
 @user_router_manager.message(F.text.casefold().contains("подобрать автомобиль"))   # Логика Подобрать автомобиль
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("Напишите ваши пожелания по автомобилю🚗\nЧтобы наши менеджеры могли правильно подобрать вам авто", reply_markup=ReplyKeyboardRemove())
-    await state.set_state(Statess.consultation)
+    await message.answer("Выберите регион:", reply_markup=region_menu.as_markup(
+                            resize_keyboard=True))
+    
 
 
-@user_router_manager.message(Statess.consultation, F.text)   # Логика Задать вопрос
+@user_router_manager.message(F.text.casefold().contains("рф"))
+@user_router_manager.message(F.text.casefold().contains("рб"))   # Логика Расчитать стоимость автомобиля
+async def hot_handler(message: types.Message, state: FSMContext) -> None:
+    region = message.text
+    await state.update_data(region = region)
+    await message.answer("Выберите тип двигателя:", reply_markup=engine_menu.as_markup(
+                            resize_keyboard=True))
+
+
+@user_router_manager.message(F.text.casefold().contains("двс"))
+@user_router_manager.message(F.text.casefold().contains("электрический"))   # Логика Расчитать стоимость автомобиля
+async def hot_handler(message: types.Message, state: FSMContext) -> None:
+    engine_type = message.text
+    await state.update_data(engine_type = engine_type)
+    await message.answer("Выберите тип автомобиля:", reply_markup=old_or_new_menu.as_markup(
+                            resize_keyboard=True))
+
+
+@user_router_manager.message(F.text.casefold().contains("новый"))
+@user_router_manager.message(F.text.casefold().contains("б/у"))   # Логика Расчитать стоимость автомобиля
 async def hot_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
+    edge_type = message.text
+    await state.update_data(edge_type = edge_type)
+    vokeb = await state.get_data()
+
     mesID = message.message_id  # ID исходного сообщения клиента
     delmes = await message.answer("Поиск свободного менеджера...")
 
-    await bot.send_message(chat_id=config.MANAGERS_GROUP_ID, text = "❓Вопрос от клиента")
+    await bot.send_message(
+        chat_id=config.MANAGERS_GROUP_ID, 
+        text = f'''
+Подбор автомобиля 🚗
+
+<b>Регион:</b> {vokeb.get("region")}
+<b>Тип двигателя:</b> {vokeb.get("engine_type")}
+<b>Тип автомобиля:</b> {vokeb.get("edge_type")}
+
+⬇️Ссылка на клиента⬇️
+''',
+parse_mode='HTML'
+        )
+    
     # Пересылаем сообщение клиента в группу менеджеров
     forwarded_message = await bot.forward_message(
         chat_id=config.MANAGERS_GROUP_ID, 
@@ -113,13 +157,12 @@ async def hot_handler(message: types.Message, state: FSMContext, session: AsyncS
     )
     await bot.delete_message(message.chat.id, delmes.message_id)
     await message.answer(
-        f"Ваш заказ:\n<b>{message.text}</b>\nотправлен менеджерам✅\nОжидайте ответ🕜\nЕсли вам нужно продолжить искать автомобиль, пока ожидаете ответ, используйте команду /start", 
-        reply_markup=get_callback_btns(btns={
-                'Закончить диалог': f'end_{mesID}',
-            }),
+        config.WAIT_MESSAGE, 
+        reply_markup=main_menu.as_markup(
+                            resize_keyboard=True),
         parse_mode='HTML'
     )
-    await state.clear()
+    await state.set_state(None)
 
 
 
@@ -146,7 +189,20 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
     
 @user_router_manager.message(F.text.casefold().contains("подборка автомобилей по стоимости"))
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика подбора автомобилей*")
+    await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    vokeb = await state.get_data()
+    del_mes = vokeb.get("send_message")
+    if del_mes:
+        await bot.delete_message(message.chat.id, del_mes)
+
+    send_message = await message.answer("Выберите стоимость автомобиля", reply_markup=get_callback_btns(btns={
+                'до 15 $$$': f'0_15000',
+                '15 - 20 $$$': f'15000_20000',
+                '20 - 30 $$$': f'20000_30000',
+                '30+ $$$': f'30000_1000000',
+            }),)
+    await state.update_data(send_message = send_message.message_id)
+
 
 
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
@@ -206,7 +262,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         )
         await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Популярные автомобили не найдены.")
+        send_message = await message.answer("🚫 Популярные автомобили не найдены.")
+        await state.update_data(send_message=send_message.message_id)
     
 
 @user_router_manager.message(F.text.casefold().contains("электроавтомобили"))
@@ -251,7 +308,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         )
         await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Электроавтомобили в пути не найдены.")
+        send_message = await message.answer("🚫 Электроавтомобили в пути не найдены.")
+        await state.update_data(send_message=send_message.message_id)
 
 
 @user_router_manager.message(F.text.casefold().contains("автомобили в пути"))
@@ -311,7 +369,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         )
         await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Автомобили в пути не найдены.")
+        send_message = await message.answer("🚫 Автомобили в пути не найдены.")
+        await state.update_data(send_message=send_message.message_id)
 
 
 @user_router_manager.message(F.text.casefold().contains("автомобили в наличии"))
@@ -371,7 +430,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         )
         await state.update_data(send_message=send_message.message_id)
     else:
-        await message.answer("🚫 Автомобили в наличии не найдены.")
+        send_message = await message.answer("🚫 Автомобили в наличии не найдены.")
+        await state.update_data(send_message=send_message.message_id)
     
 
 
@@ -567,6 +627,72 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
         client_message_id=forwarded_message.message_id  # ID пересланного сообщения
     )
 
+
+@user_router_manager.callback_query(F.data.startswith("0_15000"))
+@user_router_manager.callback_query(F.data.startswith("15000_20000"))
+@user_router_manager.callback_query(F.data.startswith("20000_30000"))
+@user_router_manager.callback_query(F.data.startswith("30000_1000000"))
+async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    car_cost = callback.data
+    vokeb = await state.get_data()
+    del_mes = vokeb.get("send_message")
+    await bot.delete_message(callback.message.chat.id, del_mes)
+
+    min_val, max_val = map(float, car_cost.split('_'))
+
+    cars = await orm_get_cars_by_cost(session, min_val, max_val)
+    print(cars)
+    if cars:
+        await state.update_data(cars_list=cars, current_index=0)
+        car = cars[0]
+        if car.electrocar == "yes":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Батарея: {car.power_bank} кВтч
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+        elif car.electrocar == "no":
+            car_info = (
+            f'''
+{car.mark} {car.model} {car.package}, {car.year} год
+
+💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+
+✅ Пробег: {format_number(car.route)} км
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
+✅ Мощность: {car.power} л.с.
+✅ Привод: {car.weel_drive}
+✅ Кузов: {car.body}
+
+'''
+        )
+        car_id = car.car_id
+        send_message = await callback.message.answer_photo(
+            photo=car.photo,
+            caption=car_info,
+            parse_mode="HTML",
+            reply_markup=get_callback_btns(btns={
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }),
+        )
+        await state.update_data(send_message=send_message.message_id)
+    else:
+        send_message = await callback.message.answer("🚫 Автомобили такой ценовой категории не найдены")
+        await state.update_data(send_message=send_message.message_id)
+    
 
 
 

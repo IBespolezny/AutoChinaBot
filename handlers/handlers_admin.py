@@ -3,15 +3,17 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram import Bot, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
 from aiogram.fsm.context import FSMContext
-from database.orm_query import orm_add_DefQuestion, orm_add_admin, orm_add_car, orm_add_manager, orm_delete_DefQuestion, orm_delete_admin, orm_delete_manager, orm_get_DefQuestions, orm_get_admin, orm_get_admins, orm_get_managers
+from database.models import Cars
+from database.orm_query import orm_add_DefQuestion, orm_add_admin, orm_add_car, orm_add_manager, orm_delete_DefQuestion, orm_delete_admin, orm_delete_car, orm_delete_manager, orm_get_DefQuestions, orm_get_admin, orm_get_admins, orm_get_managers
 from filters.chat_filters import ChatTypeFilter
 import config
 
 from aiogram.utils.media_group import MediaGroupBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
 
 from handlers.handlers_user import Statess
-from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns
+from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns, orm_delete_car_buttons
 from keybords.return_kbds import admin_menu, access_settings, admin_settings, manager_settings, auto_settings, add_del_back_menu
 # from keybords.inline_kbds import get_callback_btns
 
@@ -43,31 +45,6 @@ async def send_welcome(message: types.Message, state: FSMContext, session: Async
         await message.answer(f"Добро пожаловать, {name}", reply_markup=admin_menu.as_markup(
                             resize_keyboard=True))
         await state.set_state(Statess.Admin_kbd)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -333,7 +310,61 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
 
     
 
-########### Автомобили по стоимости
+########################### удалить автомобиль из базы ###########################
+
+@admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("удалить автомобиль"))
+async def cancel_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
+    """Обработчик кнопки 'Удалить автомобиль'."""
+    await message.delete()
+    delete_mes = await message.answer("Введите номер авто для удаления:")
+    await state.update_data(delete_mes = delete_mes.message_id)
+    await state.set_state(Statess.delete_auto)
+    
+
+@admin_router.message(Statess.delete_auto, F.text)
+async def cancel_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
+    delete_auto = int(message.text)
+    await message.delete()
+    vokeb = await state.get_data()
+    delete_mes = vokeb.get("delete_mes")
+    delete = await orm_delete_car(session, delete_auto)
+    await state.set_state(Statess.Admin_kbd)
+
+    if delete:
+        await bot.edit_message_text(
+            f"Автомобиль #️⃣{delete_auto} успешно удалён",
+            message.chat.id,
+            delete_mes
+        )
+
+
+
+@admin_router.callback_query(F.data.startswith("delete_car_"))
+async def delete_car_callback(callback: types.CallbackQuery, session: AsyncSession):
+    """Удаляет автомобиль при нажатии кнопки."""
+    car_id = int(callback.data.split("_")[-1])
+    
+    await session.execute(delete(Cars).where(Cars.car_id == car_id))
+    await session.commit()
+    
+    await callback.message.edit_text("✅ Автомобиль удалён.", reply_markup=None)
+
+
+@admin_router.callback_query(F.data.startswith("pagination_"))
+async def pagination_callback(callback: types.CallbackQuery, session: AsyncSession):
+    """Переключение страниц в клавиатуре удаления автомобилей."""
+    page = int(callback.data.split("_")[1])
+    new_keyboard = await orm_delete_car_buttons(session, page)
+
+    await callback.message.edit_reply_markup(reply_markup=new_keyboard)
+    await callback.answer()
+
+
+
+
+
+########################## Добавить автомобиль ############################
+
 
 @admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("добавить автомобиль"))  # Обработка кнопки "Добавить автомобиль"
 async def cancel_handler(message: types.Message, state: FSMContext) -> None:
