@@ -1,6 +1,8 @@
 from aiogram import Bot, Dispatcher, types, F
 import asyncio
 
+from dotenv import find_dotenv, load_dotenv
+
 from config import API_TOKEN
 
 from database.engine import create_db, drop_db, session_maker, engine
@@ -14,6 +16,7 @@ import logging
 
 from middlewares.db import DataBaseSession
 
+load_dotenv(find_dotenv())
 # Настройка логирования для отслеживания работы бота
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
