@@ -28,8 +28,10 @@ class Statess(StatesGroup):
     Order = State()                         # Состояние Любое сообщение от клиента
     add_admin_name = State()                # Состояние Добавление имени админа
     add_admin_id = State()                  # Состояние Добавление ID админа
+    help_buy_auto = State()                  # Состояние Добавление ID админа
     Admin_kbd = State()                     # Состояние клавиатуры управления доступом
     Admin_settings = State()                # Состояние управления Администраторами
+    enter_cost = State()                # Состояние управления Администраторами
     Manager_settings = State()              # Состояние управления Менеджерами
     add_manager_name = State()              # Состояние добавления Имени менеджера
     add_manager_id = State()                # Состояние добавления ID менеджера
@@ -97,11 +99,12 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer("Выберите регион:", reply_markup=region_menu.as_markup(
                             resize_keyboard=True))
+    await state.set_state(Statess.help_buy_auto)
     
 
 
-@user_router_manager.message(F.text.casefold().contains("рф"))
-@user_router_manager.message(F.text.casefold().contains("рб"))   # Логика Расчитать стоимость автомобиля
+@user_router_manager.message(Statess.help_buy_auto, F.text.casefold().contains("рф"))
+@user_router_manager.message(Statess.help_buy_auto, F.text.casefold().contains("рб"))   # Логика Расчитать стоимость автомобиля
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
     region = message.text
     await state.update_data(region = region)
@@ -109,8 +112,8 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
                             resize_keyboard=True))
 
 
-@user_router_manager.message(F.text.casefold().contains("двс"))
-@user_router_manager.message(F.text.casefold().contains("электрический"))   # Логика Расчитать стоимость автомобиля
+@user_router_manager.message(Statess.help_buy_auto, F.text.casefold().contains("двс"))
+@user_router_manager.message(Statess.help_buy_auto, F.text.casefold().contains("электрический"))   # Логика Расчитать стоимость автомобиля
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
     engine_type = message.text
     await state.update_data(engine_type = engine_type)
@@ -118,8 +121,8 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
                             resize_keyboard=True))
 
 
-@user_router_manager.message(F.text.casefold().contains("новый"))
-@user_router_manager.message(F.text.casefold().contains("б/у"))   # Логика Расчитать стоимость автомобиля
+@user_router_manager.message(Statess.help_buy_auto, F.text.casefold().contains("новый"))
+@user_router_manager.message(Statess.help_buy_auto, F.text.casefold().contains("б/у"))   # Логика Расчитать стоимость автомобиля
 async def hot_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
     edge_type = message.text
     await state.update_data(edge_type = edge_type)
@@ -166,11 +169,104 @@ parse_mode='HTML'
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 #######################################     Рассчитать стоимость    ###########################################
 
 @user_router_manager.message(F.text.casefold().contains("расчитать стоимость"))   # Логика Расчитать стоимость автомобиля
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    await message.answer("*Логика расчёта стоимости автомобиля*")
+    main_mes = await message.answer("Введите свой бюджет на покупку:", reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Statess.enter_cost)
+
+
+@user_router_manager.message(Statess.enter_cost, F.text.casefold().contains("рб"))   # Логика Расчитать стоимость автомобиля
+@user_router_manager.message(Statess.enter_cost, F.text.casefold().contains("рф"))   # Логика Расчитать стоимость автомобиля
+async def hot_handler(message: types.Message, state: FSMContext) -> None:
+    vokeb = await state.get_data()
+    money = float(vokeb.get("monet_for_buy", 0))
+
+    if message.text.casefold().__contains__("рб"):
+        edit_mes = await message.answer("Идёт расчёт...")
+        del_mes = await message.answer("Подготовка", reply_markup=ReplyKeyboardRemove())
+        await del_mes.delete()
+
+        procent = money / 100 * 24   # 24 процента от цены клиента
+        cost_with = money + procent  # цена с учётом таможни
+        final_cost = cost_with + 120 + 566 + 200 + 380 + 180 + 70
+        
+        await asyncio.sleep(2)
+        await bot.edit_message_text(
+        f"Стоимость выбранного автомобиля: \n{format_number(final_cost)} $",
+        message.chat.id,
+        edit_mes.message_id,
+        reply_markup=get_callback_btns(btns={
+            'Продолжить ✔️':'check_',
+        })
+        )
+        
+        
+    elif message.text.casefold().__contains__("рф"):
+
+        edit_mes = await message.answer("Идёт расчёт...")
+        del_mes = await message.answer("Подготовка", reply_markup=ReplyKeyboardRemove())
+        await del_mes.delete()
+
+        procent = money / 100 * 48   # 48 процента от цены клиента
+        cost_with = money + procent  # цена с учётом таможни
+        final_cost = cost_with + 1250  # добавочная стоимость
+        await asyncio.sleep(2)
+        await bot.edit_message_text(
+        f"Стоимость выбранного автомобиля: \n{format_number(final_cost)} $",
+        message.chat.id,
+        edit_mes.message_id,
+        reply_markup=get_callback_btns(btns={
+            'Продолжить ✔️':'check_',
+        })
+        )
+
+    await state.set_state(None)
+
+
+@user_router_manager.message(Statess.enter_cost, F.text)
+async def enter_cost(message: types.Message, state: FSMContext):
+    monet_for_buy = float(message.text)
+    await state.update_data(monet_for_buy = monet_for_buy)
+
+    await message.answer(
+        "Выберите регион:",
+        reply_markup=region_menu.as_markup(
+                            resize_keyboard=True),
+    )
+
+
+@user_router_manager.callback_query(F.data.startswith("check_"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete_reply_markup()
+    await callback.message.answer("Главное меню",reply_markup=main_menu.as_markup(
+                            resize_keyboard=True))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -250,15 +346,21 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 '''
         )
         car_id = car.car_id
+        
+        # Определяем кнопки в зависимости от количества автомобилей
+        btns = {'Заказать в один клик': f'get_{car_id}'}
+        if len(cars) > 1:
+            btns = {
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }
+        
         send_message = await message.answer_photo(
             photo=car.photo,
             caption=car_info,
             parse_mode="Markdown",
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
-                'Заказать в один клик': f'get_{car_id}',
-            }),
+            reply_markup=get_callback_btns(btns=btns),
         )
         await state.update_data(send_message=send_message.message_id)
     else:
@@ -296,15 +398,21 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         )
 
         car_id = car.car_id
+
+        # Определяем кнопки в зависимости от количества автомобилей
+        btns = {'Заказать в один клик': f'get_{car_id}'}
+        if len(cars) > 1:
+            btns = {
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }
+
         send_message = await message.answer_photo(
             photo=car.photo,
             caption=car_info,
             parse_mode="Markdown",
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
-                'Заказать в один клик': f'get_{car_id}',
-            }),
+            reply_markup=get_callback_btns(btns=btns),
         )
         await state.update_data(send_message=send_message.message_id)
     else:
@@ -357,15 +465,21 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 '''
         )
         car_id = car.car_id
+        
+        # Определяем кнопки в зависимости от количества автомобилей
+        btns = {'Заказать в один клик': f'get_{car_id}'}
+        if len(cars) > 1:
+            btns = {
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }
+        
         send_message = await message.answer_photo(
             photo=car.photo,
             caption=car_info,
             parse_mode="Markdown",
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
-                'Заказать в один клик': f'get_{car_id}',
-            }),
+            reply_markup=get_callback_btns(btns=btns),
         )
         await state.update_data(send_message=send_message.message_id)
     else:
@@ -418,21 +532,29 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 '''
         )
         car_id = car.car_id
+        
+        # Определяем кнопки в зависимости от количества автомобилей
+        btns = {'Заказать в один клик': f'get_{car_id}'}
+        if len(cars) > 1:
+            btns = {
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }
+
         send_message = await message.answer_photo(
             photo=car.photo,
             caption=car_info,
             parse_mode="Markdown",
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
-                'Заказать в один клик': f'get_{car_id}',
-            }),
+            reply_markup=get_callback_btns(btns=btns),
         )
         await state.update_data(send_message=send_message.message_id)
     else:
         send_message = await message.answer("🚫 Автомобили в наличии не найдены.")
         await state.update_data(send_message=send_message.message_id)
     
+
+
 
 
 
@@ -610,6 +732,8 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
         f'''
 Заказ автомобиля #️⃣{car_id}
 {car_info}
+
+⬇️Ссылка на клиента⬇️
 ''',
        parse_mode='HTML' 
     )
@@ -678,21 +802,40 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 '''
         )
         car_id = car.car_id
+        
+        # Определяем кнопки в зависимости от количества автомобилей
+        btns = {'Заказать в один клик': f'get_{car_id}'}
+        if len(cars) > 1:
+            btns = {
+                '⬅️': f'left',
+                '➡️': f'right',
+                'Заказать в один клик': f'get_{car_id}',
+            }
+        
         send_message = await callback.message.answer_photo(
             photo=car.photo,
             caption=car_info,
             parse_mode="HTML",
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
-                'Заказать в один клик': f'get_{car_id}',
-            }),
+            reply_markup=get_callback_btns(btns=btns),
         )
         await state.update_data(send_message=send_message.message_id)
     else:
         send_message = await callback.message.answer("🚫 Автомобили такой ценовой категории не найдены")
         await state.update_data(send_message=send_message.message_id)
     
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -708,6 +851,10 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer("Выберите тип вопроса❔", reply_markup=question_menu.as_markup(
                             resize_keyboard=True))
     
+
+
+
+
 
 
 #######################################     Частые вопросы    ###########################################
@@ -746,6 +893,16 @@ async def inline_button_handler(callback: types.CallbackQuery, session: AsyncSes
 
 
 
+
+
+
+
+
+
+
+
+
+
 #######################################     Задать вопрос    ###########################################
 
 @user_router_manager.message(F.text.casefold().contains("задать вопрос"))   # Логика Задать вопрос
@@ -759,7 +916,7 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 async def hot_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
     mesID = message.message_id  # ID исходного сообщения клиента
     delmes = await message.answer("Поиск свободного менеджера...")
-    await bot.send_message(chat_id=config.MANAGERS_GROUP_ID, text = "❓Вопрос от клиента")
+    await bot.send_message(chat_id=config.MANAGERS_GROUP_ID, text = "❓Вопрос от клиента\n\n⬇️Ссылка на клиента⬇️")
     # Пересылаем сообщение клиента в группу менеджеров
     forwarded_message = await bot.forward_message(
         chat_id=config.MANAGERS_GROUP_ID, 

@@ -105,7 +105,7 @@ region_menu.add(
     KeyboardButton(text="🇧🇾 РБ"),
     KeyboardButton(text="🇷🇺 РФ"),
 )
-add_del_back_menu.adjust(2)
+add_del_back_menu.adjust(2, 1)
 
 
 engine_menu = ReplyKeyboardBuilder()                          # Клавиатура Добавить/Удалить/Назад
