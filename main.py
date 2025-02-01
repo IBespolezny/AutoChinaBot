@@ -34,8 +34,8 @@ commands = [
 
 # Команды для групповых чатов
 commands_group = [
-    types.BotCommand(command="get_id", description="Получить id пользователя"),
-    types.BotCommand(command="get_group_id", description="Получить id группы"),
+    # types.BotCommand(command="get_id", description="Получить id пользователя"),
+    # types.BotCommand(command="get_group_id", description="Получить id группы"),
     types.BotCommand(command="cash", description="Удаляет данные сообщений клиентов"),
 ]
 

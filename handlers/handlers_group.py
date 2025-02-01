@@ -23,7 +23,7 @@ from keybords.return_kbds import main_menu, hot_menu, question_menu
 #######################################  Фильтр групп   #########################################
 
 managers_group_router = Router()
-managers_group_router.message.filter(ChatTypeFilter(['group']))
+managers_group_router.message.filter(ChatTypeFilter(['group', 'supergroup']))
 bot = Bot(token=config.API_TOKEN)
 
 class MainManagerFilter(BaseFilter):
@@ -79,78 +79,3 @@ async def caught_query(message: types.Message, state: FSMContext, session: Async
         await message.answer("Диалог не найден. Убедитесь, что сообщение связано с клиентским запросом.")
 
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# @managers_group_router.message(StateFilter('*'), MainManagerFilter(), F.reply_to_message) # Обработчик ответов Менеджера дня
-# async def caught_query(message: types.Message, state: FSMContext):
-#     if message.photo:
-#         # Обработка фотографии
-#         reply_to_message_id = message.reply_to_message.message_id
-        
-#         if reply_to_message_id in HU.messages:
-#             clientId = HU.messages.get(reply_to_message_id)
-#             HU.clientID = clientId
-#             # Пересылаем фото клиенту
-#             await bot.send_photo(clientId, message.photo[-1].file_id, caption=f"<b>{message.from_user.full_name}:</b> \n{message.caption or 'Отправляю вам фото'}", parse_mode="HTML")
-#         else:
-#             await message.answer("Произошла ошибка при отправке, сообщение отсутствует в базе.\nСвяжитесь с технической поддержкой для решения проблемы!")
-    
-#     elif message.text:
-#         # Обработка текстового сообщения
-#         reply_to_message_id = message.reply_to_message.message_id
-        
-#         if reply_to_message_id in HU.messages:
-#             clientId = HU.messages.get(reply_to_message_id)
-#             HU.clientID = clientId
-#             # Пересылаем текстовое сообщение клиенту
-#             await bot.send_message(clientId, f"<b>{message.from_user.full_name}</b>:\n{message.text}", parse_mode="HTML")
-#         else:
-#             await message.answer("Произошла ошибка при отправке, сообщение отсутствует в базе.\nСвяжитесь с технической поддержкой для решения проблемы!")
-    
-#     elif message.document:
-#         # Обработка документа
-#         reply_to_message_id = message.reply_to_message.message_id
-        
-#         if reply_to_message_id in HU.messages:
-#             clientId = HU.messages.get(reply_to_message_id)
-#             HU.clientID = clientId
-#             # Пересылаем документ клиенту
-#             await bot.send_document(clientId, message.document.file_id, caption=f"<b>{message.from_user.full_name}</b>:\n{message.caption or 'Отправляю вам документ'}", parse_mode="HTML")
-#         else:
-#             await message.answer("Произошла ошибка при отправке, сообщение отсутствует в базе.\nСвяжитесь с технической поддержкой для решения проблемы!")
-
-#     HU.managerID = message.from_user.id
-    
-
