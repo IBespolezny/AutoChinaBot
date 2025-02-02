@@ -55,7 +55,7 @@ class Statess(StatesGroup):
     engine = State()                              # Добавление года авто
     engine_volume = State()                              # Добавление года авто
     route = State()                              # Добавление года авто
-    engine_type = State()                              # Добавление года авто
+    rools = State()                              # Добавление года авто
     power = State()                              # Добавление года авто
     power_engin = State()                              # Добавление года авто
     photo = State()                              # Добавление года авто
@@ -359,7 +359,6 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         send_message = await message.answer_photo(
             photo=car.photo,
             caption=car_info,
-            parse_mode="Markdown",
             reply_markup=get_callback_btns(btns=btns),
         )
         await state.update_data(send_message=send_message.message_id)

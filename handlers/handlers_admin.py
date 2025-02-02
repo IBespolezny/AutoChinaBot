@@ -339,25 +339,8 @@ async def cancel_handler(message: types.Message, state: FSMContext, session: Asy
 
 
 
-@admin_router.callback_query(F.data.startswith("delete_car_"))
-async def delete_car_callback(callback: types.CallbackQuery, session: AsyncSession):
-    """Удаляет автомобиль при нажатии кнопки."""
-    car_id = int(callback.data.split("_")[-1])
-    
-    await session.execute(delete(Cars).where(Cars.car_id == car_id))
-    await session.commit()
-    
-    await callback.message.edit_text("✅ Автомобиль удалён.", reply_markup=None)
 
 
-@admin_router.callback_query(F.data.startswith("pagination_"))
-async def pagination_callback(callback: types.CallbackQuery, session: AsyncSession):
-    """Переключение страниц в клавиатуре удаления автомобилей."""
-    page = int(callback.data.split("_")[1])
-    new_keyboard = await orm_delete_car_buttons(session, page)
-
-    await callback.message.edit_reply_markup(reply_markup=new_keyboard)
-    await callback.answer()
 
 
 
@@ -469,53 +452,31 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
         reply_markup=get_callback_btns(btns={
                 '🔙 Назад': f'back_to_year_{mes}',
             }),)
-    await state.set_state(Statess.engine_type)
+    await state.set_state(Statess.rools)
 
 
 
-@admin_router.message(Statess.engine_type, F.text)  # Обработка кнопки "Автомобили по стоимости"
-async def cancel_handler(message: types.Message, state: FSMContext) -> None:
+
+@admin_router.message(Statess.rools, F.text)
+async def choos_engine_type(message: types.Message, state: FSMContext, session: AsyncSession):
+    await message.delete()
     cost = float(message.text)
     await state.update_data(cost = cost)
-    await message.delete()
-    vokeb = await state.get_data()
-    mes = vokeb.get("mes")
-
-    await bot.edit_message_text(
-        "Укажите тип двигателя:", 
-        message.chat.id, 
-        mes, 
-        reply_markup=get_custom_callback_btns(btns={
-                'ДВС': f'ДВС',
-                'Электро': f'электрический',
-                'Гибрид': f'гибрид',
-                '🔙 Назад': f'back_to_cost_',
-            }, layout=[3,1]
-            ),)
-    await state.set_state(None)
-
-
-
-@admin_router.callback_query(F.data.startswith("ДВС"))
-@admin_router.callback_query(F.data.startswith("электрический"))
-@admin_router.callback_query(F.data.startswith("гибрид"))
-async def choos_engine_type(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
-
-    await state.update_data(engine_type = callback.data)
     vokeb = await state.get_data()
     mes = vokeb.get("mes")
 
     await bot.edit_message_text(
         "Укажите привод:", 
-        callback.message.chat.id, 
+        message.chat.id, 
         mes, 
         reply_markup=get_custom_callback_btns(btns={
                 'Передний': f'передний',
                 'Задний': f'задний',
                 'Полный': f'полный',
-                '🔙 Назад': f'back_to_engine_type',
+                '🔙 Назад': f'back_to_cost_',
             }, layout=[3,1]
             ),)
+    await state.set_state(None)
 
 
 @admin_router.callback_query(F.data.startswith("передний"))
@@ -541,58 +502,65 @@ async def choos_engine_type(callback: types.CallbackQuery, state: FSMContext, se
             ),)
 
 
+
+
+
 @admin_router.callback_query(F.data.startswith("популярные"))
 @admin_router.callback_query(F.data.startswith("в пути"))
 @admin_router.callback_query(F.data.startswith("в наличии"))
 @admin_router.callback_query(F.data.startswith("нет"))
-async def choos_engine_type(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
-
+async def cancel_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
+    
     await state.update_data(flag = callback.data)
     vokeb = await state.get_data()
     mes = vokeb.get("mes")
 
     await bot.edit_message_text(
-        "Это электроавтомобиль?", 
+        "Укажите тип двигателя:", 
         callback.message.chat.id, 
         mes, 
         reply_markup=get_custom_callback_btns(btns={
-                'Да': 'electric_yes',
-                'Нет': 'electric_no',
-                '🔙 Назад': 'back_to_flag',
-            }, layout=[2,1]
+                'ДВС': f'ДВС',
+                'Электро': f'электрический',
+                'Гибрид': f'гибрид',
+                '🔙 Назад': f'back_to_flag',
+            }, layout=[3,1]
             ),)
-    
 
-@admin_router.callback_query(F.data.startswith("electric_yes"))
-@admin_router.callback_query(F.data.startswith("electric_no"))
+
+@admin_router.callback_query(F.data.startswith("ДВС"))
+@admin_router.callback_query(F.data.startswith("электрический"))
+@admin_router.callback_query(F.data.startswith("гибрид"))
 async def choos_engine_type(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     vokeb = await state.get_data()
     mes = vokeb.get("mes")
-    await state.update_data(electrocar=callback.data.replace("electric_", ""))
+    await state.update_data(engine_type = callback.data)
 
-    if callback.data == "electric_yes":
+    if callback.data == "электрический":
         await bot.edit_message_text(
         "Введите мощность электроавтомобиля:", 
         callback.message.chat.id, 
         mes, 
         reply_markup=get_custom_callback_btns(btns={
-                '🔙 Назад': 'back_to_electrocar',
+                '🔙 Назад': 'back_to_engine_type',
             }, layout=[1]
             ),)
         
+        await state.update_data(electrocar="yes")
         await state.set_state(Statess.power)
         
 
-    elif callback.data == "electric_no":
+    if callback.data != "электрический":
         await bot.edit_message_text(
         "Введите объём двигателя:", 
         callback.message.chat.id, 
         mes, 
         reply_markup=get_custom_callback_btns(btns={
-                '🔙 Назад': 'back_to_electrocar',
+                '🔙 Назад': 'back_to_engine_type',
             }, layout=[1]
             ),)
         
+        await state.update_data(electrocar="no")
         await state.set_state(Statess.engine_volume)
 
 
@@ -822,7 +790,7 @@ async def back_to_year(callback: types.CallbackQuery, state: FSMContext) -> None
         callback.message.chat.id, 
         mesID, 
         reply_markup=get_custom_callback_btns(btns={
-                '🔙 Назад': 'back_to_electrocar',
+                '🔙 Назад': 'back_to_engine_type',
             }, layout=[1]
             ),)
     await state.set_state(Statess.engine_volume)
@@ -837,7 +805,7 @@ async def back_to_cost(callback: types.CallbackQuery, state: FSMContext) -> None
         mesID,
         reply_markup=get_callback_btns(btns={'🔙 Назад': 'back_to_year_'})
     )
-    await state.set_state(Statess.engine_type)
+    await state.set_state(Statess.rools)
 
 @admin_router.callback_query(F.data.startswith("back_to_engine_type"))
 async def back_to_engine_type(callback: types.CallbackQuery, state: FSMContext) -> None:
@@ -853,7 +821,7 @@ async def back_to_engine_type(callback: types.CallbackQuery, state: FSMContext) 
             '🔙 Назад': 'back_to_cost_'
         }, layout=[3,1])
     )
-    await state.set_state(None)
+
 
 @admin_router.callback_query(F.data.startswith("back_to_route"))
 async def back_to_route(callback: types.CallbackQuery, state: FSMContext) -> None:
@@ -884,7 +852,7 @@ async def back_to_power(callback: types.CallbackQuery, state: FSMContext) -> Non
         "Введите мощность электроавтомобиля:",
         callback.message.chat.id,
         mesID,
-        reply_markup=get_custom_callback_btns(btns={'🔙 Назад': 'back_to_electrocar'}, layout=[1])
+        reply_markup=get_custom_callback_btns(btns={'🔙 Назад': 'back_to_engine_type'}, layout=[1])
     )
     await state.set_state(Statess.power)
 
@@ -904,20 +872,6 @@ async def back_to_power(callback: types.CallbackQuery, state: FSMContext) -> Non
     await state.set_state(Statess.power_reserve) 
 
 
-@admin_router.callback_query(F.data.startswith("back_to_electrocar"))
-async def back_to_electrocar(callback: types.CallbackQuery, state: FSMContext) -> None:
-    mesID = callback.message.message_id
-    await bot.edit_message_text(
-        "Это электроавтомобиль?",
-        callback.message.chat.id,
-        mesID,
-        reply_markup=get_custom_callback_btns(btns={
-            'Да': 'electric_yes',
-            'Нет': 'electric_no',
-            '🔙 Назад': 'back_to_flag'
-        }, layout=[2,1])
-    )
-    await state.set_state(None)
 
 
 @admin_router.callback_query(F.data.startswith("back_to_weel_drive"))
