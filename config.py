@@ -1,5 +1,5 @@
-# API_TOKEN = "7942005579:AAFuNbNHLHESvQrqHAzlmhIS6HrnXTXbFvE" # основная
-API_TOKEN = "6582832911:AAGxbXeIqZVaFpM18uNpyLQAvBQtJweAczE"    # Тестовая
+API_TOKEN = "7942005579:AAFuNbNHLHESvQrqHAzlmhIS6HrnXTXbFvE" # основная
+# API_TOKEN = "6582832911:AAGxbXeIqZVaFpM18uNpyLQAvBQtJweAczE"    # Тестовая
 
 # DB_LITE="sqlite+aiosqlite:///test.db" # Путь до базы данных SQLite
 # DB_POSTGRE = "postgresql+asyncpg://bot:121212@localhost:5432/bot" # Путь до базы данных PostgreSQL
