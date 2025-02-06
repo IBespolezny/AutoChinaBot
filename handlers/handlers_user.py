@@ -17,7 +17,7 @@ from sqlalchemy.future import select
 
 # from keybords.inline_kbds import get_callback_btns
 from functions.functions import format_number
-from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row
+from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns
 from keybords.return_kbds import main_menu, hot_menu, question_menu, region_menu, engine_menu, old_or_new_menu
 
 #######################################  Класс состояний  ###################################################
@@ -48,6 +48,8 @@ class Statess(StatesGroup):
     consultation = State()                      # Состояние формирования заказа
 
     choos_region = State()                      # Состояние формирования заказа
+    enter_engine_type = State()                      # Состояние формирования заказа
+    enter_phone_number = State()                      # Состояние формирования заказа
 
     Mark = State()                              # Добавление марки авто
     Model = State()                              # Добавление модели авто
@@ -186,68 +188,283 @@ parse_mode='HTML'
 
 @user_router_manager.message(F.text.casefold().contains("расчитать стоимость"))   # Логика Расчитать стоимость автомобиля
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    main_mes = await message.answer("Введите свой бюджет на покупку:", reply_markup=ReplyKeyboardRemove())
+    del_mes = await message.answer("Загрузка...", reply_markup=ReplyKeyboardRemove())
+    await bot.delete_message(del_mes.chat.id, del_mes.message_id)
+
+    main_mes = await message.answer("Введите стоимость автомобиля:")
+    await state.update_data(main_mes = main_mes.message_id)
     await state.set_state(Statess.enter_cost)
-
-
-@user_router_manager.message(Statess.enter_cost, F.text.casefold().contains("рб"))   # Логика Расчитать стоимость автомобиля
-@user_router_manager.message(Statess.enter_cost, F.text.casefold().contains("рф"))   # Логика Расчитать стоимость автомобиля
-async def hot_handler(message: types.Message, state: FSMContext) -> None:
-    vokeb = await state.get_data()
-    money = float(vokeb.get("monet_for_buy", 0))
-
-    if message.text.casefold().__contains__("рб"):
-        edit_mes = await message.answer("Идёт расчёт...")
-        del_mes = await message.answer("Подготовка", reply_markup=ReplyKeyboardRemove())
-        await del_mes.delete()
-
-        procent = money / 100 * 24   # 24 процента от цены клиента
-        cost_with = money + procent  # цена с учётом таможни
-        final_cost = cost_with + 120 + 566 + 200 + 380 + 180 + 70
-        
-        await asyncio.sleep(2)
-        await bot.edit_message_text(
-        f"Стоимость выбранного автомобиля: \n{format_number(final_cost)} $",
-        message.chat.id,
-        edit_mes.message_id,
-        reply_markup=get_callback_btns(btns={
-            'Продолжить ✔️':'check_',
-        })
-        )
-        
-        
-    elif message.text.casefold().__contains__("рф"):
-
-        edit_mes = await message.answer("Идёт расчёт...")
-        del_mes = await message.answer("Подготовка", reply_markup=ReplyKeyboardRemove())
-        await del_mes.delete()
-
-        procent = money / 100 * 48   # 48 процента от цены клиента
-        cost_with = money + procent  # цена с учётом таможни
-        final_cost = cost_with + 1250  # добавочная стоимость
-        await asyncio.sleep(2)
-        await bot.edit_message_text(
-        f"Стоимость выбранного автомобиля: \n{format_number(final_cost)} $",
-        message.chat.id,
-        edit_mes.message_id,
-        reply_markup=get_callback_btns(btns={
-            'Продолжить ✔️':'check_',
-        })
-        )
-
-    await state.set_state(None)
 
 
 @user_router_manager.message(Statess.enter_cost, F.text)
 async def enter_cost(message: types.Message, state: FSMContext):
-    monet_for_buy = float(message.text)
+    vokeb = await state.get_data()
+    edit_mesID = int(vokeb.get("main_mes"))
+    try:
+        monet_for_buy = float(message.text)
+    except ValueError:
+        await message.delete()
+        await bot.edit_message_text(
+        "<b>Некорректный ввод</b>\n\nВводите числа в корректном формате, например, 7900 или 8500",
+        message.chat.id,
+        edit_mesID,
+        parse_mode='HTML',)
+        return
+
+    
+    await message.delete()
+
+    if monet_for_buy < 5000:
+        await bot.edit_message_text(
+        "<b>Некорректный ввод</b>\n\nВведите сумму больше 5 000 $",
+        message.chat.id,
+        edit_mesID,
+        parse_mode='HTML',
+    )
+        return
+        
     await state.update_data(monet_for_buy = monet_for_buy)
 
-    await message.answer(
+    await bot.edit_message_text(
         "Выберите регион:",
-        reply_markup=region_menu.as_markup(
-                            resize_keyboard=True),
+        message.chat.id,
+        edit_mesID,
+        reply_markup=get_custom_callback_btns(btns={
+            '🇧🇾 РБ':'rb_',
+            '🇷🇺 РФ':'rf_',
+            }, layout=[2]), 
     )
+    await state.set_state(None)
+
+
+@user_router_manager.callback_query(F.data.startswith("rb_"))
+@user_router_manager.callback_query(F.data.startswith("rf_"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    edit_mes = callback.message.message_id
+    region = callback.data.replace("_", "")
+    await state.update_data(region = region)
+
+    await bot.edit_message_text(
+        "Выберите тип двигателя:",
+        callback.message.chat.id,
+        edit_mes,
+        reply_markup=get_custom_callback_btns(btns={
+            'ДВС':'двс_',
+            'Гибрид':'Гибрид_',
+            'Электрический':'Электрический_',
+            }, layout=[2,1])
+    )
+
+
+@user_router_manager.callback_query(F.data.startswith("Гибрид_"))
+@user_router_manager.callback_query(F.data.startswith("Электрический_"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    edit_mes = callback.message.message_id
+    await bot.edit_message_text(
+        "Идёт расчёт...",
+        callback.message.chat.id,
+        edit_mes,
+    )
+    await asyncio.sleep(2)
+
+    engine_type = callback.data.replace("_", "")
+    await state.update_data(engine_type = engine_type)
+    vokeb = await state.get_data()
+
+    if vokeb.get("region") == "rb":
+        if vokeb.get("engine_type") == "Гибрид" or vokeb.get("engine_type") == "Электрический":
+            cost = int(vokeb.get("monet_for_buy"))
+            customs_cost = (cost / 100 * 24) + 500  # 500 $ за таможню + 24% от цены авто
+            delivery = 2300
+            bank_comission = cost / 100 * 2  # 2% комиссия банка
+            final_cost = cost + customs_cost + delivery + bank_comission
+            await bot.edit_message_text(
+        f'''
+🚗 Расчёт стоимости авто:  
+__________________________
+
+✅ Цена авто: {format_number(cost)} $  
+__________________________
+
+✅ Таможенные сборы: {format_number(customs_cost)} $  
+__________________________
+
+✅ Доставка до Минска: {format_number(int(delivery))} $  
+__________________________
+
+✅ Банковская комиссия: {format_number(bank_comission)} $  
+__________________________
+
+🟢 Итоговая стоимость: ➡️ {format_number(int(final_cost))} $
+''',
+        callback.message.chat.id,
+        edit_mes,
+        reply_markup=get_custom_callback_btns(btns={
+            'Главное меню':'check_',
+            }, layout=[1])
+    )
+    
+    elif vokeb.get("region") == "rf":
+        await bot.edit_message_text(
+            "Оставьте свой нромер, чтобы мы могли с вами связаться",
+            callback.message.chat.id,
+            edit_mes
+        )
+        await state.set_state(Statess.enter_phone_number)
+
+
+@user_router_manager.callback_query(F.data.startswith("двс_"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    edit_mes = callback.message.message_id
+    engine_type = callback.data.replace("_", "")
+    await state.update_data(engine_type = engine_type)
+    
+    await bot.edit_message_text(
+        "Выберите тип автомобиля:",
+        callback.message.chat.id,
+        edit_mes,
+        reply_markup=get_custom_callback_btns(btns={
+            'до 3-х лет':'новый',
+            '3-5 лет':'старый',
+            }, layout=[2])
+    )
+
+
+@user_router_manager.callback_query(F.data.startswith("новый"))
+@user_router_manager.callback_query(F.data.startswith("старый"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    edit_mes = callback.message.message_id
+
+    edge_type = callback.data
+    await state.update_data(edge_type = edge_type)
+    vokeb = await state.get_data()
+
+    if edge_type == "новый":
+        if vokeb.get("region") == "rf":
+            await bot.edit_message_text(
+            "Оставьте свой нромер, чтобы мы могли с вами связаться",
+            callback.message.chat.id,
+            edit_mes
+        )
+            await state.set_state(Statess.enter_phone_number)
+            return
+
+        await bot.edit_message_text(
+        "Идёт расчёт...",
+        callback.message.chat.id,
+        edit_mes,
+    )
+        await asyncio.sleep(2)
+
+        cost = int(vokeb.get("monet_for_buy"))
+        delivery = 2300
+        bank_comission = cost / 100 * 2  # 2% комиссия банка
+        customs_cost = (cost / 100 * 24) + 500  # 500 $ за таможню + 24% от цены авто
+        final_cost = cost + customs_cost + delivery + bank_comission
+        await bot.edit_message_text(
+        f'''
+🚗 Расчёт стоимости авто:  
+__________________________
+
+✅ Цена авто: {format_number(cost)} $  
+__________________________
+
+✅ Таможенные сборы: {format_number(customs_cost)} $  
+__________________________
+
+✅ Доставка до Минска: {format_number(int(delivery))} $  
+__________________________
+
+✅ Банковская комиссия: {format_number(bank_comission)} $  
+__________________________
+
+🟢 Итоговая стоимость: ➡️ {format_number(int(final_cost))} $
+''',
+        callback.message.chat.id,
+        edit_mes,
+        reply_markup=get_custom_callback_btns(btns={
+            'Главное меню':'check_',
+            }, layout=[1])
+    )
+
+    elif edge_type == "старый":
+        await bot.edit_message_text(
+        "Выберите объём двигателя:",
+        callback.message.chat.id,
+        edit_mes,
+        reply_markup=get_custom_callback_btns(btns={
+            'до 1500':'1500',
+            '1500-1800':'1500_1800',
+            '1800-2300':'1800_2300',
+            }, layout=[1,2])
+    )
+
+
+@user_router_manager.callback_query(F.data.startswith("1500"))
+@user_router_manager.callback_query(F.data.startswith("1500_1800"))
+@user_router_manager.callback_query(F.data.startswith("1800_2300"))
+async def next_car(callback: types.CallbackQuery, state: FSMContext):
+    edit_mes = callback.message.message_id
+    engine_str_volume = callback.data
+    await state.update_data(engine_str_volume = engine_str_volume)
+    vokeb = await state.get_data()
+
+    if vokeb.get("region") == "rf":
+        await bot.edit_message_text(
+            "Оставьте свой нромер, чтобы мы могли с вами связаться",
+            callback.message.chat.id,
+            edit_mes
+        )
+        await state.set_state(Statess.enter_phone_number)
+        return
+    
+    await bot.edit_message_text(
+        "Идёт расчёт...",
+        callback.message.chat.id,
+        edit_mes,
+    )
+    await asyncio.sleep(2)
+
+    engine_volume = callback.data
+    await state.update_data(engine_volume = engine_volume)
+    cost = int(vokeb.get("monet_for_buy"))
+    delivery = 2300
+    bank_comission = cost / 100 * 2  # 2% комиссия банка
+
+    if engine_volume == "1500":
+        customs_cost = 1750
+    elif engine_volume == "1500_1800":
+        customs_cost = 3000
+    elif engine_volume == "1800_2300":
+        customs_cost = 3800
+
+    final_cost = cost + customs_cost + delivery + bank_comission
+    await bot.edit_message_text(
+        f'''
+🚗 Расчёт стоимости авто:  
+__________________________
+
+✅ Цена авто: {format_number(cost)} $  
+__________________________
+
+✅ Таможенные сборы: {format_number(customs_cost)} $  
+__________________________
+
+✅ Доставка до Минска: {format_number(int(delivery))} $  
+__________________________
+
+✅ Банковская комиссия: {format_number(bank_comission)} $  
+__________________________
+
+🟢 Итоговая стоимость: ➡️ {format_number(int(final_cost))} $
+''',
+        callback.message.chat.id,
+        edit_mes,
+        reply_markup=get_custom_callback_btns(btns={
+            'Главное меню':'check_',
+            }, layout=[1])
+    )
+
 
 
 @user_router_manager.callback_query(F.data.startswith("check_"))
@@ -257,7 +474,57 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
                             resize_keyboard=True))
 
 
+@user_router_manager.message(Statess.enter_phone_number, F.text)
+async def enter_cost(message: types.Message, state: FSMContext):
+    await message.delete()
+    phon_number = message.text
+    vokeb = await state.get_data()
+    edit_mesID = int(vokeb.get("main_mes"))
+    cost = int(vokeb.get("monet_for_buy"))
+    engine_type = vokeb.get("engine_type")
 
+    send_text = f'''
+<b>Запрос цены от клиента</b>💸
+
+Цена: {format_number(cost)} $
+Тип двигателя: {engine_type}
+
+Имя пользоватлея: @{message.from_user.username}
+Телефон: {phon_number}
+'''
+
+    if vokeb.get("engine_str_volume"):
+        engine_volume = vokeb.get("engine_str_volume")
+        edge_type = vokeb.get("edge_type")
+        send_text = f'''
+<b>Запрос цены от клиента</b>💸
+
+Цена: {format_number(cost)} $
+Тип двигателя: {engine_type}
+Тип авто: {edge_type}
+Объём двигателя: {engine_volume}
+
+Имя пользоватлея: @{message.from_user.username}
+Телефон: {phon_number}
+
+'''
+
+
+    await bot.edit_message_text(
+        "Ваш запрос отправлен менеджеру.\nОжидайте, с вами свяжутся🕐",
+        message.chat.id,
+        edit_mesID,
+        reply_markup=get_custom_callback_btns(btns={
+            'Главное меню':'check_',
+            }, layout=[1])
+    )
+
+    await bot.send_message(
+        config.MANAGERS_GROUP_ID,
+        send_text,
+parse_mode='HTML',
+    )
+    await state.set_state(None)
 
 
 
