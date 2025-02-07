@@ -393,14 +393,14 @@ __________________________
         callback.message.chat.id,
         edit_mes,
         reply_markup=get_custom_callback_btns(btns={
-            'до 1500':'1500',
+            'до 1500':'1500_',
             '1500-1800':'1500_1800',
             '1800-2300':'1800_2300',
             }, layout=[1,2])
     )
 
 
-@user_router_manager.callback_query(F.data.startswith("1500"))
+@user_router_manager.callback_query(F.data.startswith("1500_"))
 @user_router_manager.callback_query(F.data.startswith("1500_1800"))
 @user_router_manager.callback_query(F.data.startswith("1800_2300"))
 async def next_car(callback: types.CallbackQuery, state: FSMContext):
@@ -431,7 +431,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
     delivery = 2300
     bank_comission = cost / 100 * 2  # 2% комиссия банка
 
-    if engine_volume == "1500":
+    if engine_volume == "1500_":
         customs_cost = 1750
     elif engine_volume == "1500_1800":
         customs_cost = 3000
@@ -576,8 +576,9 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
     if del_mes:
         await bot.delete_message(message.chat.id, del_mes)
     
-    cars = await orm_get_car_by_flag(session, "популярные")
+    cars = await orm_get_car_by_flag(session, "популярное")
     if cars:
+        total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
         if car.electrocar == "yes":
@@ -593,7 +594,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         elif car.electrocar == "no":
@@ -609,7 +610,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         car_id = car.car_id
@@ -618,8 +619,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
             btns = {
-                '⬅️': f'left',
-                '➡️': f'right',
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             }
         
@@ -644,6 +645,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
     
     cars = await orm_get_electrocars(session)
     if cars:
+        total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
 
@@ -659,7 +661,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
 
@@ -669,8 +671,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
             btns = {
-                '⬅️': f'left',
-                '➡️': f'right',
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             }
 
@@ -696,6 +698,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
     
     cars = await orm_get_car_by_flag(session, "в пути")
     if cars:
+        total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
         if car.electrocar == "yes":
@@ -711,7 +714,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         elif car.electrocar == "no":
@@ -727,7 +730,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         car_id = car.car_id
@@ -736,8 +739,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
             btns = {
-                '⬅️': f'left',
-                '➡️': f'right',
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             }
         
@@ -763,6 +766,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         
     cars = await orm_get_car_by_flag(session, "в наличии")
     if cars:
+        total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
         if car.electrocar == "yes":
@@ -778,7 +782,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         elif car.electrocar == "no":
@@ -794,7 +798,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         car_id = car.car_id
@@ -803,8 +807,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
             btns = {
-                '⬅️': f'left',
-                '➡️': f'right',
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             }
 
@@ -834,6 +838,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
     chat_id = data.get("order_chat")
     
     if cars:
+        total_cars = len(cars)
         index = (index + 1) % len(cars)
         await state.update_data(current_index=index)
         car = cars[index]
@@ -850,7 +855,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         elif car.electrocar == "no":
@@ -866,7 +871,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         car_id = car.car_id
@@ -874,9 +879,9 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
             media=types.InputMediaPhoto(media=car.photo, caption=car_info, parse_mode="Markdown"),
             chat_id=chat_id,
             message_id=message_id,
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
+            reply_markup=get_callback_btns(btns = {
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             })
         )
@@ -892,6 +897,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
     chat_id = data.get("order_chat")
     
     if cars:
+        total_cars = len(cars)
         index = (index - 1) % len(cars)
         await state.update_data(current_index=index)
         car = cars[index]
@@ -908,7 +914,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         elif car.electrocar == "no":
@@ -924,7 +930,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         car_id = car.car_id
@@ -932,9 +938,9 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
             media=types.InputMediaPhoto(media=car.photo, caption=car_info, parse_mode="Markdown"),
             chat_id=chat_id,
             message_id=message_id,
-            reply_markup=get_callback_btns(btns={
-                '⬅️': f'left',
-                '➡️': f'right',
+            reply_markup=get_callback_btns(btns = {
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             })
         )
@@ -1031,8 +1037,9 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
     min_val, max_val = map(float, car_cost.split('_'))
 
     cars = await orm_get_cars_by_cost(session, min_val, max_val)
-    print(cars)
+
     if cars:
+        total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
         if car.electrocar == "yes":
@@ -1048,7 +1055,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         elif car.electrocar == "no":
@@ -1064,7 +1071,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-
+\n🔢 Найдено автомобилей: {total_cars}\n
 '''
         )
         car_id = car.car_id
@@ -1073,8 +1080,8 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
             btns = {
-                '⬅️': f'left',
-                '➡️': f'right',
+                '◀️ Предыдущее': f'left',
+                'Следующее ▶️': f'right',
                 'Заказать в один клик': f'get_{car_id}',
             }
         
