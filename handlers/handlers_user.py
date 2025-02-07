@@ -272,13 +272,20 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
     vokeb = await state.get_data()
 
     if vokeb.get("region") == "rb":
-        if vokeb.get("engine_type") == "Гибрид" or vokeb.get("engine_type") == "Электрический":
+        if vokeb.get("engine_type") == "Гибрид":
             cost = int(vokeb.get("monet_for_buy"))
             customs_cost = (cost / 100 * 24) + 500  # 500 $ за таможню + 24% от цены авто
             delivery = 2300
             bank_comission = cost / 100 * 2  # 2% комиссия банка
             final_cost = cost + customs_cost + delivery + bank_comission
-            await bot.edit_message_text(
+
+        if vokeb.get("engine_type") == "Электрический":
+            cost = int(vokeb.get("monet_for_buy"))
+            customs_cost = 500  # 500 $ за таможню
+            delivery = 2300
+            bank_comission = cost / 100 * 2  # 2% комиссия банка
+            final_cost = cost + customs_cost + delivery + bank_comission
+        await bot.edit_message_text(
         f'''
 🚗 Расчёт стоимости авто:  
 __________________________
