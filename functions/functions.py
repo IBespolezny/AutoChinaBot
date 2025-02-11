@@ -3,7 +3,7 @@ from sqlalchemy import text
 from aiogram.utils.media_group import MediaGroupBuilder
 
 from database.models import Base
-from database.orm_query import orm_get_admin
+from database.orm_query import orm_get_admin, orm_get_admins, orm_get_managers
 
 
 async def get_admin_dict(session: AsyncSession) -> dict:
@@ -46,3 +46,17 @@ def format_number(value):
     if isinstance(value, float):
         return f"{value:,.2f}".replace(",", " ").replace(".", ",")
     return f"{value:,}".replace(",", " ")
+
+
+
+async def get_admins_and_managers(session: AsyncSession):
+    admins = await orm_get_admins(session)  # Получение админов из БД
+    managers = await orm_get_managers(session)  # Получение менеджеров из БД
+
+    adminss = {admin.id: admin.name for admin in admins}
+    managerss = {manager.id: manager.name for manager in managers}
+
+    admins_ids = list(adminss.keys())
+    managers_ids = list(managerss.keys())
+
+    return admins_ids, adminss, managers_ids, managerss

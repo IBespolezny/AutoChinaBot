@@ -4,7 +4,7 @@ from aiogram import Bot, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
 from aiogram.fsm.context import FSMContext
 from database.models import Cars
-from database.orm_query import orm_add_DefQuestion, orm_add_admin, orm_add_car, orm_add_manager, orm_delete_DefQuestion, orm_delete_admin, orm_delete_car, orm_delete_manager, orm_get_DefQuestions, orm_get_admin, orm_get_admins, orm_get_managers
+from database.orm_query import orm_add_DefQuestion, orm_add_admin, orm_add_car, orm_add_manager, orm_delete_DefQuestion, orm_delete_admin, orm_delete_car, orm_delete_manager, orm_get_DefQuestions, orm_get_admin, orm_get_admins, orm_get_cars, orm_get_managers
 from filters.chat_filters import ChatTypeFilter
 import config
 
@@ -12,6 +12,7 @@ from aiogram.utils.media_group import MediaGroupBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete
 
+from functions.functions import get_admins_and_managers
 from handlers.handlers_user import Statess
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns, orm_delete_car_buttons
 from keybords.return_kbds import admin_menu, access_settings, admin_settings, manager_settings, auto_settings, add_del_back_menu
@@ -31,14 +32,7 @@ admin_router.message.filter(ChatTypeFilter(['private'])) # Обрабатыва�
 @admin_router.message(StateFilter('*'), Command("admin"))
 async def send_welcome(message: types.Message, state: FSMContext, session: AsyncSession):
     await message.delete()
-    admins = await orm_get_admins(session)  # Получение админов из БД
-    managers = await orm_get_managers(session)  # Получение менеджеров из БД
-
-    adminss = {admin.id: admin.name for admin in admins}
-    managerss = {manager.id: manager.name for manager in managers}
-
-    admins_ids = list(adminss.keys())
-    managers_ids = list(managerss.keys())
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
 
     if message.from_user.id in admins_ids:
         name = adminss.get(message.from_user.id)    # Получение имени админа по ID
@@ -72,16 +66,9 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
 @admin_router.message(Statess.Admin_settings, F.text.casefold().contains("добавить"))  # Обработка кнопки "добавить"
 async def cancel_handler(message: types.Message, state: FSMContext, session:AsyncSession) -> None:
     await message.delete()
-    admins = await orm_get_admins(session) # Получение админов из БД
-    managers = await orm_get_managers(session) # Получение менеджеров из БД
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
 
-    adminss = {admin.name: f"{admin.id}" for admin in admins}
-    managerss = {manager.name : f"{manager.id}" for manager in managers}
-
-    admins = [int(admin) for admin in adminss.values()]
-    managers = [int(manager) for manager in managerss.values()]
-
-    if message.from_user.id in admins:
+    if message.from_user.id in admins_ids:
         delmes = await message.answer("Как зовут Администратора?")
         await state.set_state(Statess.add_admin_name)
         
@@ -121,6 +108,7 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
         admins = await orm_get_admins(session)
 
         adminess = {admin.name: f"delAdmin_{admin.id}" for admin in admins}
+        adminess["Назад"] = "admin_"
 
         await message.answer("Выберите администратора для удаления:", reply_markup=get_callback_btns(btns=adminess))
 
@@ -159,6 +147,7 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
         admins = await orm_get_admins(session)
 
         adminess = {admin.name: f"admin_{admin.id}" for admin in admins}
+        adminess["Назад"] = "admin_"
 
         await message.answer("Список Администраторов:", reply_markup=get_callback_btns(btns=adminess))
 
@@ -195,6 +184,7 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
         managers = await orm_get_managers(session)
 
         managerss = {manager.name: f"manager_{manager.id}" for manager in managers}
+        managerss["Назад"] = "manager_"
 
         await message.answer("Список Менеджеров:", reply_markup=get_callback_btns(btns=managerss))
 
@@ -247,6 +237,7 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
         managers = await orm_get_managers(session)
 
         managerss = {manager.name: f"delManager_{manager.id}" for manager in managers}
+        managerss["Назад"] = "manager_"
 
         await message.answer("Выберите менеджера для удаления:", reply_markup=get_callback_btns(btns=managerss))
 
@@ -310,36 +301,53 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
 
     
 
+
+
+
 ########################### удалить автомобиль из базы ###########################
 
 @admin_router.message(Statess.Admin_kbd, F.text.casefold().contains("удалить автомобиль"))
-async def cancel_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
-    """Обработчик кнопки 'Удалить автомобиль'."""
+async def show_car_list(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
     await message.delete()
-    delete_mes = await message.answer("Введите номер авто для удаления:")
-    await state.update_data(delete_mes = delete_mes.message_id)
-    await state.set_state(Statess.delete_auto)
     
+    # Получаем список автомобилей из базы
+    cars = await orm_get_cars(session)
 
-@admin_router.message(Statess.delete_auto, F.text)
-async def cancel_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
-    delete_auto = int(message.text)
-    await message.delete()
-    vokeb = await state.get_data()
-    delete_mes = vokeb.get("delete_mes")
-    delete = await orm_delete_car(session, delete_auto)
+    if not cars:
+        await message.answer("🚗 В базе нет автомобилей для удаления.")
+        return
+
+    # Формируем кнопки (по одной кнопке в строке)
+    btns = {f"{car_mark} {car_model} {int(car_cost)}": f"delete_car_{car_id}" for car_id, car_mark, car_model, car_cost in cars}
+    btns["Назад"] = "delCars_"
+    keyboard = get_custom_callback_btns(btns=btns, layout=[1] * len(btns))  # Каждая строка содержит 1 кнопку
+
+    delete_mes = await message.answer("Выберите автомобиль для удаления:", reply_markup=keyboard)
+    await state.update_data(delete_mes=delete_mes.message_id)
+    await state.set_state(Statess.delete_auto)
+
+
+
+@admin_router.callback_query(F.data.startswith("delete_car_"))
+async def delete_selected_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
+    car_id = int(callback.data.split("_")[2])  # Получаем ID автомобиля из callback_data
+
+    # Удаляем автомобиль
+    delete_success = await orm_delete_car(session, car_id)
+
+    # Убираем сообщение с кнопками
+    await bot.edit_message_text(
+        chat_id=callback.message.chat.id,
+        message_id=callback.message.message_id,
+        text=f"🚗 Автомобиль #️⃣{car_id} успешно удалён" if delete_success else "❌ Ошибка при удалении автомобиля."
+    )
+
     await state.set_state(Statess.Admin_kbd)
 
-    if delete:
-        await bot.edit_message_text(
-            f"Автомобиль #️⃣{delete_auto} успешно удалён",
-            message.chat.id,
-            delete_mes
-        )
-
-
-
-
+@admin_router.callback_query(F.data.startswith("delCars_"))
+async def delete_selected_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
+    await callback.message.delete()
+    await state.set_state(Statess.Admin_kbd)
 
 
 

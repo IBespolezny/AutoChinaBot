@@ -215,6 +215,13 @@ async def orm_get_car(session: AsyncSession, car_id: int):             # Пол�
     result = await session.execute(query)
     return result.scalar()
 
+async def orm_get_cars(session: AsyncSession):
+    """Получение всех автомобилей из базы."""
+    query = select(Cars.car_id, Cars.mark, Cars.model, Cars.cost)
+    result = await session.execute(query)
+    return result.fetchall()
+
+
 async def orm_get_car_by_flag(session: AsyncSession, flag: str):             # Получение одного вопроса по id
     query = select(Cars).where(Cars.flag == flag)
     result = await session.execute(query)

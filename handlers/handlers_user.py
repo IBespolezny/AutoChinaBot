@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 # from keybords.inline_kbds import get_callback_btns
-from functions.functions import format_number
+from functions.functions import format_number, get_admins_and_managers
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns
 from keybords.return_kbds import main_menu, hot_menu, question_menu, region_menu, engine_menu, old_or_new_menu
 
@@ -576,6 +576,7 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 @user_router_manager.message(F.text.casefold().contains("популярные автомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
     await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
     vokeb = await state.get_data()
     del_mes = vokeb.get("send_message")
     if del_mes:
@@ -586,6 +587,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
+        car_id = car.car_id
         if car.electrocar == "yes":
             car_info = (
             f'''
@@ -596,12 +598,14 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
+            if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+                
         elif car.electrocar == "no":
             car_info = (
             f'''
@@ -615,11 +619,16 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
-        car_id = car.car_id
-        
+            
+            if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        else:
+            # Если значение `electrocar` некорректное
+            car_info = "❌ Ошибка: Неправильное значение поля electrocar!"
         # Определяем кнопки в зависимости от количества автомобилей
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
@@ -643,6 +652,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 @user_router_manager.message(F.text.casefold().contains("электроавтомобили"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
     await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
     vokeb = await state.get_data()
     del_mes = vokeb.get("send_message")
     if del_mes:
@@ -653,6 +663,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
+        car_id = car.car_id
 
         car_info = (
             f'''
@@ -663,14 +674,15 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
+        # Если это админ или менеджер — добавляем номер авто
+        if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
 
-        car_id = car.car_id
 
         # Определяем кнопки в зависимости от количества автомобилей
         btns = {'Заказать в один клик': f'get_{car_id}'}
@@ -696,6 +708,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 @user_router_manager.message(F.text.casefold().contains("автомобили в пути"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
     await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
     vokeb = await state.get_data()
     del_mes = vokeb.get("send_message")
     if del_mes:
@@ -706,6 +719,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
+        car_id = car.car_id
         if car.electrocar == "yes":
             car_info = (
             f'''
@@ -716,12 +730,14 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
+            if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+                
         elif car.electrocar == "no":
             car_info = (
             f'''
@@ -735,11 +751,16 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
-        car_id = car.car_id
-        
+            # Если это админ или менеджер — добавляем номер авто
+            if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        else:
+            # Если значение `electrocar` некорректное
+            car_info = "❌ Ошибка: Неправильное значение поля electrocar!"
         # Определяем кнопки в зависимости от количества автомобилей
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
@@ -764,6 +785,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 @user_router_manager.message(F.text.casefold().contains("автомобили в наличии"))
 async def hot_handler(message: types.Message, session: AsyncSession, state: FSMContext) -> None:
     await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
     vokeb = await state.get_data()
     del_mes = vokeb.get("send_message")
     if del_mes:
@@ -774,6 +796,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
         total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
+        car_id = car.car_id
         if car.electrocar == "yes":
             car_info = (
             f'''
@@ -784,12 +807,14 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
+            if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
         elif car.electrocar == "no":
             car_info = (
             f'''
@@ -803,10 +828,17 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
-        car_id = car.car_id
+            # Если это админ или менеджер — добавляем номер авто
+            if message.from_user.id in admins_ids or message.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        else:
+            # Если значение `electrocar` некорректное
+            car_info = "❌ Ошибка: Неправильное значение поля electrocar!"
+        
         
         # Определяем кнопки в зависимости от количества автомобилей
         btns = {'Заказать в один клик': f'get_{car_id}'}
@@ -835,7 +867,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 
 
 @user_router_manager.callback_query(F.data.startswith("right"))
-async def next_car(callback: types.CallbackQuery, state: FSMContext):
+async def next_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
     data = await state.get_data()
     cars = data.get("cars_list", [])
     index = data.get("current_index", 0)
@@ -847,6 +880,8 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
         index = (index + 1) % len(cars)
         await state.update_data(current_index=index)
         car = cars[index]
+        car_id = car.car_id
+
         if car.electrocar == "yes":
             car_info = (
             f'''
@@ -857,12 +892,14 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
+            if callback.from_user.id in admins_ids or callback.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
         elif car.electrocar == "no":
             car_info = (
             f'''
@@ -876,10 +913,17 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
-        car_id = car.car_id
+            # Если это админ или менеджер — добавляем номер авто
+            if callback.from_user.id in admins_ids or callback.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        else:
+            # Если значение `electrocar` некорректное
+            car_info = "❌ Ошибка: Неправильное значение поля electrocar!"
+
         await callback.bot.edit_message_media(
             media=types.InputMediaPhoto(media=car.photo, caption=car_info, parse_mode="Markdown"),
             chat_id=chat_id,
@@ -894,7 +938,8 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 
 
 @user_router_manager.callback_query(F.data.startswith("left"))
-async def prev_car(callback: types.CallbackQuery, state: FSMContext):
+async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
     data = await state.get_data()
     cars = data.get("cars_list", [])
     index = data.get("current_index", 0)
@@ -906,6 +951,8 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
         index = (index - 1) % len(cars)
         await state.update_data(current_index=index)
         car = cars[index]
+        car_id = car.car_id
+
         if car.electrocar == "yes":
             car_info = (
             f'''
@@ -916,12 +963,14 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
+            if callback.from_user.id in admins_ids or callback.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
         elif car.electrocar == "no":
             car_info = (
             f'''
@@ -935,10 +984,17 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext):
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
+\n🔢 Найдено автомобилей: {total_cars}
 '''
         )
-        car_id = car.car_id
+            # Если это админ или менеджер — добавляем номер авто
+            if callback.from_user.id in admins_ids or callback.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        else:
+            # Если значение `electrocar` некорректное
+            car_info = "❌ Ошибка: Неправильное значение поля electrocar!"
+
         await callback.bot.edit_message_media(
             media=types.InputMediaPhoto(media=car.photo, caption=car_info, parse_mode="Markdown"),
             chat_id=chat_id,
@@ -973,7 +1029,6 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 '''                       
@@ -1037,37 +1092,47 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
     car_cost = callback.data
     vokeb = await state.get_data()
     del_mes = vokeb.get("send_message")
-    await bot.delete_message(callback.message.chat.id, del_mes)
 
+    # Проверяем, есть ли сообщение для удаления
+    if del_mes:
+        await bot.delete_message(callback.message.chat.id, del_mes)
+
+    # Получаем админов и менеджеров
+    admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
+
+    # Разбираем диапазон стоимости
     min_val, max_val = map(float, car_cost.split('_'))
-
     cars = await orm_get_cars_by_cost(session, min_val, max_val)
 
     if cars:
         total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
         car = cars[0]
-        if car.electrocar == "yes":
-            car_info = (
-            f'''
-{car.mark} {car.model} {car.package}, {car.year} год
+        car_id = car.car_id
 
+        # Проверяем, является ли авто электрокаром
+        if car.electrocar.lower() == "yes":  # исправил на lower(), чтобы учитывать разные написания
+            car_info = (
+                f'''
+{car.mark} {car.model} {car.package}, {car.year} год
 💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
 
 ✅ Пробег: {format_number(car.route)} км
 ✅ Запас хода: {format_number(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
-✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
-'''
-        )
-        elif car.electrocar == "no":
-            car_info = (
-            f'''
-{car.mark} {car.model} {car.package}, {car.year} год
+\n🔢 Найдено автомобилей: {total_cars}
+''')
 
+            # Если это админ или менеджер — добавляем номер авто
+            if callback.from_user.id in admins_ids or callback.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        elif car.electrocar.lower() == "no":
+            car_info = (
+                f'''
+{car.mark} {car.model} {car.package}, {car.year} год
 💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
 
 ✅ Пробег: {format_number(car.route)} км
@@ -1076,20 +1141,26 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 ✅ Мощность: {car.power} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
-\n🔢 Найдено автомобилей: {total_cars}\n
-'''
-        )
-        car_id = car.car_id
-        
-        # Определяем кнопки в зависимости от количества автомобилей
+\n🔢 Найдено автомобилей: {total_cars}
+''')
+
+            # Если это админ или менеджер — добавляем номер авто
+            if callback.from_user.id in admins_ids or callback.from_user.id in managers_ids:
+                car_info += f"#️⃣{car_id} номер авто"
+
+        else:
+            # Если значение `electrocar` некорректное
+            car_info = "❌ Ошибка: Неправильное значение поля electrocar!"
+
+        # Создаем кнопки
         btns = {'Заказать в один клик': f'get_{car_id}'}
         if len(cars) > 1:
             btns = {
-                '◀️ Предыдущее': f'left',
-                'Следующее ▶️': f'right',
+                '◀️ Предыдущее': 'left',
+                'Следующее ▶️': 'right',
                 'Заказать в один клик': f'get_{car_id}',
             }
-        
+
         send_message = await callback.message.answer_photo(
             photo=car.photo,
             caption=car_info,
@@ -1100,7 +1171,6 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
     else:
         send_message = await callback.message.answer("🚫 Автомобили такой ценовой категории не найдены")
         await state.update_data(send_message=send_message.message_id)
-    
 
 
 
