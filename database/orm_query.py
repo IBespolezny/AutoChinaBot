@@ -2,7 +2,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Admin, Cars, DefQuestion, Dialog, Manager
+from database.models import Admin, Cars, DefQuestion, Dialog, Manager, ManagersGroup
 
 ##############################   АДМИНИСТРАТОРЫ   #######################################
 
@@ -246,3 +246,44 @@ async def orm_delete_car(session: AsyncSession, car_id: int) -> bool:
     except SQLAlchemyError:
         await session.rollback()
         return False
+    
+
+
+
+######################## Группа с админами #######################
+
+async def orm_update_managers_group(session: AsyncSession, group_id: int):
+    """
+    Обновляет единственную запись в таблице ManagersGroup на новую с указанным group_id.
+    Если запись отсутствует, создается новая.
+    """
+
+    # Получаем существующую запись (она должна быть одна)
+    query = select(ManagersGroup)
+    result = await session.execute(query)
+    existing_record = result.scalars().first()
+
+    if existing_record:
+        # Обновляем существующую запись
+        existing_record.group_id = group_id
+    else:
+        # Создаем новую запись, если её нет
+        new_record = ManagersGroup(group_id=group_id)
+        session.add(new_record)
+
+    # Сохраняем изменения
+    await session.commit()
+
+
+
+async def orm_get_managers_group(session: AsyncSession):
+    """
+    Получает все записи о сообщениях из базы данных.
+    """
+    query = select(ManagersGroup)
+    result = await session.execute(query)
+    group = result.scalars().first()
+    if group:
+        return group.group_id
+    else:
+        return None

@@ -62,3 +62,9 @@ class Cars(Base):
     photo: Mapped[str] = mapped_column(String(300), nullable=False)            # Фото
     
     
+
+class ManagersGroup(Base):
+    __tablename__ = 'managers_group'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    group_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=False)

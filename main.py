@@ -6,7 +6,7 @@ from dotenv import find_dotenv, load_dotenv
 from config import API_TOKEN
 
 from database.engine import create_db, drop_db, session_maker, engine
-from database.models import Admin, Cars, DefQuestion, Dialog, Manager
+from database.models import Admin, Cars, DefQuestion, Dialog, Manager, ManagersGroup
 from functions.functions import create_specific_table
 from handlers.handlers_user import user_router_manager
 from handlers.handlers_admin import admin_router
@@ -49,6 +49,7 @@ async def on_startup(bot):
     await create_specific_table(engine, DefQuestion)
     await create_specific_table(engine, Manager)
     await create_specific_table(engine, Admin)
+    await create_specific_table(engine, ManagersGroup)
 
 async def on_shutdown(bot):
     print("бот закончил работу")

@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_get_managers_group, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -76,9 +76,7 @@ user_router_manager = Router()
 user_router_manager.message.filter(ChatTypeFilter(['private']))
 bot = Bot(token=config.API_TOKEN)
 
-# class MainManagerFilter(BaseFilter):
-#     async def __call__(self, message: Message) -> bool:
-#         return message.chat.id == config.MANAGERS_GROUP_ID
+
 
 #######################################     Статичные Команды    ###########################################
 
@@ -134,7 +132,7 @@ async def hot_handler(message: types.Message, state: FSMContext, session: AsyncS
     delmes = await message.answer("Поиск свободного менеджера...")
 
     await bot.send_message(
-        chat_id=config.MANAGERS_GROUP_ID, 
+        chat_id= await orm_get_managers_group(session), 
         text = f'''
 Подбор автомобиля 🚗
 
@@ -149,7 +147,7 @@ parse_mode='HTML'
     
     # Пересылаем сообщение клиента в группу менеджеров
     forwarded_message = await bot.forward_message(
-        chat_id=config.MANAGERS_GROUP_ID, 
+        chat_id=await orm_get_managers_group(session), 
         from_chat_id=message.chat.id, 
         message_id=mesID
     )
@@ -482,7 +480,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 
 
 @user_router_manager.message(Statess.enter_phone_number, F.text)
-async def enter_cost(message: types.Message, state: FSMContext):
+async def enter_cost(message: types.Message, state: FSMContext, session: AsyncSession):
     await message.delete()
     phon_number = message.text
     vokeb = await state.get_data()
@@ -527,7 +525,7 @@ async def enter_cost(message: types.Message, state: FSMContext):
     )
 
     await bot.send_message(
-        config.MANAGERS_GROUP_ID,
+        await orm_get_managers_group(session),
         send_text,
 parse_mode='HTML',
     )
@@ -1007,7 +1005,7 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
     )
 
     await bot.send_message(
-        config.MANAGERS_GROUP_ID,
+        await orm_get_managers_group(session),
         f'''
 Заказ автомобиля #️⃣{car_id}
 {car_info}
@@ -1018,7 +1016,7 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
     )
 
     forwarded_message = await bot.forward_message(
-        chat_id=config.MANAGERS_GROUP_ID, 
+        chat_id=await orm_get_managers_group(session), 
         from_chat_id=callback.message.chat.id, 
         message_id=order_mes
     )
@@ -1196,10 +1194,10 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 async def hot_handler(message: types.Message, state: FSMContext, session: AsyncSession) -> None:
     mesID = message.message_id  # ID исходного сообщения клиента
     delmes = await message.answer("Поиск свободного менеджера...")
-    await bot.send_message(chat_id=config.MANAGERS_GROUP_ID, text = "❓Вопрос от клиента\n\n⬇️Ссылка на клиента⬇️")
+    await bot.send_message(chat_id=await orm_get_managers_group(session), text = "❓Вопрос от клиента\n\n⬇️Ссылка на клиента⬇️")
     # Пересылаем сообщение клиента в группу менеджеров
     forwarded_message = await bot.forward_message(
-        chat_id=config.MANAGERS_GROUP_ID, 
+        chat_id=await orm_get_managers_group(session), 
         from_chat_id=message.chat.id, 
         message_id=mesID
     )

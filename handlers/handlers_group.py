@@ -4,11 +4,11 @@ from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import ReplyKeyboardRemove, Message
+from aiogram.types import ReplyKeyboardRemove, Message, ChatMemberAdministrator, ChatMemberOwner
 import requests
 
 import config
-from database.orm_query import orm_delete_all_dialogs, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_dialog_by_client_message, orm_get_managers, orm_update_manager_in_dialog
+from database.orm_query import orm_delete_all_dialogs, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_dialog_by_client_message, orm_get_managers, orm_get_managers_group, orm_update_manager_in_dialog, orm_update_managers_group
 from filters.chat_filters import ChatTypeFilter
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,8 +27,8 @@ managers_group_router.message.filter(ChatTypeFilter(['group', 'supergroup']))
 bot = Bot(token=config.API_TOKEN)
 
 class MainManagerFilter(BaseFilter):
-    async def __call__(self, message: Message) -> bool:
-        return message.chat.id == config.MANAGERS_GROUP_ID
+    async def __call__(self, message: Message, session: AsyncSession) -> bool:
+        return message.chat.id == await orm_get_managers_group(session)
 
 #######################################     Статичные Команды    ###########################################
 
@@ -51,11 +51,27 @@ async def send_welcome(message: types.Message, session: AsyncSession):
     await message.answer("Данные удалены!\n\n Клиенты больше не побеспокоят😉\n\nНужно чистить данные через некоторый промежуток времени...")
 
 
-@managers_group_router.message(StateFilter('*'), Command("set_group"))
-async def send_welcome(message: types.Message, session: AsyncSession):
-    await message.delete()
-    config.MANAGERS_GROUP_ID = message.chat.id
-    await message.answer("✅ Группа установлена!")
+
+@managers_group_router.message(Command("set_group"))
+async def inline_button_handler_exchange(message: types.Message, state: FSMContext, session: AsyncSession):
+    # Получаем информацию о боте в чате
+    chat_member = await bot.get_chat_member(message.chat.id, bot.id)
+    # Проверяем, является ли бот администратором или владельцем чата
+    if isinstance(chat_member, (ChatMemberAdministrator, ChatMemberOwner)):
+        if chat_member.can_delete_messages:
+            try:
+                await message.delete()
+            except Exception as e:
+                await message.answer("⚠️ Не удалось удалить сообщение. Возможно, оно слишком старое.")
+
+            await orm_update_managers_group(session, message.chat.id)
+            await message.answer("✅ Группа установлена!")
+        else:
+            await message.answer("⚠️ Бот не имеет прав на удаление сообщений. Проверьте права администратора.")
+    else:
+        await message.answer("⚠️ Бот не является администратором в этом чате. Добавьте права администратора.")
+
+
 
 @managers_group_router.message(StateFilter('*'), MainManagerFilter(), F.reply_to_message)  # Обработчик ответов менеджера
 async def caught_query(message: types.Message, state: FSMContext, session: AsyncSession):
