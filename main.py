@@ -1,9 +1,8 @@
+import os
 from aiogram import Bot, Dispatcher, types, F
 import asyncio
 
 from dotenv import find_dotenv, load_dotenv
-
-from config import API_TOKEN
 
 from database.engine import create_db, drop_db, session_maker, engine
 from database.models import Admin, Cars, DefQuestion, Dialog, Manager, ManagersGroup
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 ALLOW_UPDATES = ['message', 'edited_message', 'callback_query']     # Какие обновления обрабатываются при пулинге
 
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=os.getenv("API_TOKEN"))
 # bot.my_admins_list = []                 # Список админов бота
 dp = Dispatcher()
 dp.include_routers(managers_group_router)   # Подключение диспетчера для групп

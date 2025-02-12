@@ -1,4 +1,5 @@
 import asyncio
+import os
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram import Bot, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
@@ -10,7 +11,6 @@ import config
 
 from aiogram.utils.media_group import MediaGroupBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete
 
 from functions.functions import get_admins_and_managers
 from handlers.handlers_user import Statess
@@ -18,7 +18,7 @@ from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row
 from keybords.return_kbds import admin_menu, access_settings, admin_settings, manager_settings, auto_settings, add_del_back_menu
 # from keybords.inline_kbds import get_callback_btns
 
-bot = Bot(token=config.API_TOKEN)
+bot = Bot(token=os.getenv("API_TOKEN"))
 
 
 #################################   Фильтр групп   #################################
@@ -69,7 +69,8 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
     admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
 
     if message.from_user.id in admins_ids:
-        delmes = await message.answer("Как зовут Администратора?")
+        delmes = await message.answer("Как зовут Администратора?", reply_markup=get_custom_callback_btns(
+            btns={"Назад":"admin_"}, layout=[1]))
         await state.set_state(Statess.add_admin_name)
         
 
@@ -78,7 +79,8 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
     await state.update_data(name = message.text)
     await message.delete()
 
-    delmes = await message.answer("Отправьте id Администратора:")
+    delmes = await message.answer("Отправьте id Администратора:", reply_markup=get_custom_callback_btns(
+            btns={"Назад":"admin_"}, layout=[1]))
     await state.set_state(Statess.add_admin_id)
 
 
@@ -124,11 +126,6 @@ async def inline_button_handler(callback: types.CallbackQuery, session: AsyncSes
     await asyncio.sleep(5)
     await bot.delete_message(callback.message.chat.id, delmes.message_id)
 
-
-@admin_router.callback_query(F.data.startswith("admin_")) # Обаботчик для удаления списка Администраторов
-async def inline_button_handler(callback_query: types.CallbackQuery):
-    # Удаляем сообщение с клавиатурой
-    await callback_query.message.delete()
 
 
 @admin_router.message(Statess.Admin_settings, F.text.casefold().contains("список администраторов"))  # Обработка кнопки "удалить"
@@ -199,7 +196,8 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
     admins = [int(admin) for admin in adminss.values()]
 
     if message.from_user.id in admins:
-        delmes = await message.answer("Как зовут Менеджера?")
+        delmes = await message.answer("Как зовут Менеджера?", reply_markup=get_custom_callback_btns(
+            btns={"Назад":"manager_"}, layout=[1]))
         await state.set_state(Statess.add_manager_name)
 
 
@@ -208,7 +206,8 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
     await state.update_data(name = message.text)
     await message.delete()
 
-    await message.answer("Отправьте id Менеджера:")
+    await message.answer("Отправьте id Менеджера:", reply_markup=get_custom_callback_btns(
+            btns={"Назад":"manager_"}, layout=[1]))
     await state.set_state(Statess.add_manager_id)
 
 
@@ -252,11 +251,6 @@ async def inline_button_handler(callback: types.CallbackQuery, session: AsyncSes
     delmes = await callback.message.answer("Менеджер удалён!")
 
 
-@admin_router.callback_query(F.data.startswith("manager_")) # Обаботчик для удаления списка Менеджеров
-async def inline_button_handler(callback: types.CallbackQuery):
-    # Удаляем сообщение с клавиатурой
-    await callback.message.delete()
-
 
 @admin_router.message(Statess.Manager_settings, F.text.casefold().contains("назад"))  # Обработка кнопки "назад"
 async def cancel_handler(message: types.Message, state: FSMContext) -> None:
@@ -274,9 +268,18 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer("Главное меню🔙", reply_markup=admin_menu.as_markup(
                             resize_keyboard=True))
 
+@admin_router.callback_query(F.data.startswith("manager_")) # Обаботчик для удаления списка Менеджеров
+async def inline_button_handler(callback: types.CallbackQuery, state: FSMContext):
+    # Удаляем сообщение с клавиатурой
+    await callback.message.delete()
+    await state.set_state(Statess.Manager_settings)
 
 
-
+@admin_router.callback_query(F.data.startswith("admin_")) # Обаботчик для удаления списка Администраторов
+async def inline_button_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    # Удаляем сообщение с клавиатурой
+    await callback_query.message.delete()
+    await state.set_state(Statess.Admin_settings)
 
 
 
@@ -979,6 +982,7 @@ async def cancel_handler(message: types.Message, state: FSMContext, session:Asyn
     questions = await orm_get_DefQuestions(session) # Получение админов из БД
 
     questionss = {question.question: f"delQuestion_{question.id}" for question in questions}
+    questionss["Назад"] = "questions_"
 
     await message.answer("Выберите вопрос для удаления:", reply_markup=get_callback_btns_single_row(btns=questionss, sizes=(1,)))
 
@@ -998,3 +1002,8 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
     await state.set_state(Statess.Admin_kbd)
     await message.answer("Выберите вариант", reply_markup=admin_menu.as_markup(
                             resize_keyboard=True))
+    
+@admin_router.callback_query(F.data.startswith("questions_")) # Обаботчик для удаления Вопроса по id
+async def inline_button_handler(callback: types.CallbackQuery, session: AsyncSession, state: FSMContext):
+    await callback.message.delete()
+    await state.set_state(Statess.DefQuestion_set)

@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
@@ -14,6 +15,7 @@ from filters.chat_filters import ChatTypeFilter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # from keybords.inline_kbds import get_callback_btns
+from functions.functions import get_admins_and_managers
 from handlers.handlers_user import Statess
 import handlers.handlers_user as HU
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row
@@ -24,7 +26,7 @@ from keybords.return_kbds import main_menu, hot_menu, question_menu
 
 managers_group_router = Router()
 managers_group_router.message.filter(ChatTypeFilter(['group', 'supergroup']))
-bot = Bot(token=config.API_TOKEN)
+bot = Bot(token=os.getenv("API_TOKEN"))
 
 class MainManagerFilter(BaseFilter):
     async def __call__(self, message: Message, session: AsyncSession) -> bool:
@@ -46,14 +48,7 @@ async def send_welcome(message: types.Message):
 
 @managers_group_router.message(StateFilter('*'), Command("cash"))
 async def send_welcome(message: types.Message, session: AsyncSession):
-    # await message.delete()
-    await orm_delete_all_dialogs(session)
-    await message.answer("Данные удалены!\n\n Клиенты больше не побеспокоят😉\n\nНужно чистить данные через некоторый промежуток времени...")
 
-
-
-@managers_group_router.message(Command("set_group"))
-async def inline_button_handler_exchange(message: types.Message, state: FSMContext, session: AsyncSession):
     # Получаем информацию о боте в чате
     chat_member = await bot.get_chat_member(message.chat.id, bot.id)
     # Проверяем, является ли бот администратором или владельцем чата
@@ -64,12 +59,48 @@ async def inline_button_handler_exchange(message: types.Message, state: FSMConte
             except Exception as e:
                 await message.answer("⚠️ Не удалось удалить сообщение. Возможно, оно слишком старое.")
 
-            await orm_update_managers_group(session, message.chat.id)
-            await message.answer("✅ Группа установлена!")
+            admins_ids, adminss, managers_ids, managerss = await get_admins_and_managers(session)
+            if message.from_user.id in admins_ids:
+                await orm_delete_all_dialogs(session)
+                await message.answer("Данные удалены!\n\n Клиенты больше не побеспокоят😉\n\nНужно чистить данные через некоторый промежуток времени...")
+            else:
+                await message.answer("У вас недостаточно прав, команда доступна только Администраторам!")
         else:
             await message.answer("⚠️ Бот не имеет прав на удаление сообщений. Проверьте права администратора.")
     else:
         await message.answer("⚠️ Бот не является администратором в этом чате. Добавьте права администратора.")
+
+
+
+@managers_group_router.message(Command("set_group"))
+async def inline_button_handler_exchange(message: types.Message, state: FSMContext, session: AsyncSession):
+    # Получаем информацию о боте в чате
+    chat_member = await bot.get_chat_member(message.chat.id, bot.id)
+    
+    # Проверяем, является ли бот администратором или владельцем чата
+    if isinstance(chat_member, (ChatMemberAdministrator, ChatMemberOwner)):
+        if chat_member.can_delete_messages and chat_member.can_pin_messages:
+            try:
+                await message.delete()
+            except Exception:
+                await message.answer("⚠️ Не удалось удалить сообщение. Возможно, оно слишком старое.")
+            
+            # Обновляем ID группы в базе данных
+            await orm_update_managers_group(session, message.chat.id)
+            
+            # Отправляем инструкцию и закрепляем сообщение
+            sent_message = await message.answer(config.INSTRUCTION, parse_mode='HTML')
+            try:
+                await bot.pin_chat_message(message.chat.id, sent_message.message_id)
+            except Exception:
+                await message.answer("⚠️ Не удалось закрепить сообщение. Проверьте права бота.")
+            
+            await message.answer("✅ Группа установлена и инструкция закреплена!")
+        else:
+            await message.answer("⚠️ Бот не имеет прав на удаление или закрепление сообщений. Проверьте права администратора.")
+    else:
+        await message.answer("⚠️ Бот не является администратором в этом чате. Добавьте права администратора.")
+
 
 
 

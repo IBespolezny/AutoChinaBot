@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
@@ -74,7 +75,7 @@ class Statess(StatesGroup):
 
 user_router_manager = Router()
 user_router_manager.message.filter(ChatTypeFilter(['private']))
-bot = Bot(token=config.API_TOKEN)
+bot = Bot(token=os.getenv("API_TOKEN"))
 
 
 
@@ -300,7 +301,7 @@ __________________________
 ✅ Банковская комиссия: {format_number(bank_comission)} $  
 __________________________
 
-🟢 Приблизительная стоимость: ➡️ {format_number(int(final_cost))} $
+🟢 Приблизительная стоимость: \n➡️ {format_number(int(final_cost))} $
 ''',
         callback.message.chat.id,
         edit_mes,
@@ -383,7 +384,7 @@ __________________________
 ✅ Банковская комиссия: {format_number(bank_comission)} $  
 __________________________
 
-🟢 Приблизительная стоимость: ➡️ {format_number(int(final_cost))} $
+🟢 Приблизительная стоимость: \n➡️ {format_number(int(final_cost))} $
 ''',
         callback.message.chat.id,
         edit_mes,
@@ -461,7 +462,7 @@ __________________________
 ✅ Банковская комиссия: {format_number(bank_comission)} $  
 __________________________
 
-🟢 Приблизительная стоимость: ➡️ {format_number(int(final_cost))} $
+🟢 Приблизительная стоимость: \n➡️ {format_number(int(final_cost))} $
 ''',
         callback.message.chat.id,
         edit_mes,
