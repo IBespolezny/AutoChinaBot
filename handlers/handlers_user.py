@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 # from keybords.inline_kbds import get_callback_btns
-from functions.functions import format_number, get_admins_and_managers
+from functions.functions import format_number, get_admins_and_managers, int_format
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns
 from keybords.return_kbds import main_menu, hot_menu, question_menu, region_menu, engine_menu, old_or_new_menu
 
@@ -583,7 +583,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
     if del_mes:
         await bot.delete_message(message.chat.id, del_mes)
     
-    cars = await orm_get_car_by_flag(session, "популярное")
+    cars = await orm_get_car_by_flag(session, "популярные")
     if cars:
         total_cars = len(cars)
         await state.update_data(cars_list=cars, current_index=0)
@@ -594,11 +594,11 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -612,12 +612,12 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
+✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
 ✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -670,11 +670,11 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -726,10 +726,10 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
 ✅ Батарея: {car.power_bank} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
@@ -744,12 +744,12 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Пробег: {int_format(car.route)} км
+✅ Тип топлива: {int_format(car.engine_type)} 
+✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -803,11 +803,11 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)}
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -821,12 +821,12 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)}
 
-✅ Пробег: {format_number(car.route)} км
+✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -888,11 +888,11 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext, session: As
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -906,12 +906,12 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext, session: As
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
+✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -959,11 +959,11 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -977,12 +977,12 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
             f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
+✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -1025,11 +1025,11 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
         car_info = (f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 '''                       
@@ -1039,12 +1039,12 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
         car_info = (f'''
 {car.mark} {car.model} {car.package}, {car.year} год
 
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
+✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 '''                       
@@ -1116,11 +1116,11 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
             car_info = (
                 f'''
 {car.mark} {car.model} {car.package}, {car.year} год
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
-✅ Запас хода: {format_number(car.power_reserve)} км
-✅ Батарея: {car.power_bank} кВтч
+✅ Пробег: {int_format(car.route)} км
+✅ Запас хода: {int_format(car.power_reserve)} км
+✅ Батарея: {int_format(car.power_bank)} кВтч
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}
@@ -1134,12 +1134,12 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
             car_info = (
                 f'''
 {car.mark} {car.model} {car.package}, {car.year} год
-💰 Цена: ${format_number(car.cost)} с учетом доставки (40-60 дней)
+💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
-✅ Пробег: {format_number(car.route)} км
+✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {car.engine_volume} л
-✅ Мощность: {car.power} л.с.
+✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
 \n🔢 Найдено автомобилей: {total_cars}

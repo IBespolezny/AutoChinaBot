@@ -48,6 +48,10 @@ def format_number(value):
     return f"{value:,}".replace(",", " ")
 
 
+def int_format(value):
+    new_value = int(value)
+    return f"{new_value:,}".replace(",", " ")
+
 
 async def get_admins_and_managers(session: AsyncSession):
     admins = await orm_get_admins(session)  # Получение админов из БД
