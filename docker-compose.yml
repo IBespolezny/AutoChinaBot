@@ -32,6 +32,7 @@ services:
       PG_PASSWORD: ${POSTGRES_PASSWORD}
       PG_DATABASE: ${POSTGRES_DB}
       DB_POSTGRE: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${PG_PORT}/${POSTGRES_DB}"
+      API_TOKEN: ${API_TOKEN}
 
     volumes:
       - .:/app
