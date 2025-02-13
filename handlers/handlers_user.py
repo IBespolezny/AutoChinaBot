@@ -747,8 +747,8 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 💰 Цена: ${int_format(car.cost)} с учетом доставки (40-60 дней)
 
 ✅ Пробег: {int_format(car.route)} км
-✅ Тип топлива: {int_format(car.engine_type)} 
-✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Тип топлива: {car.engine_type} 
+✅ Объём двигателя: {car.engine_volume} л
 ✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
@@ -825,7 +825,7 @@ async def hot_handler(message: types.Message, session: AsyncSession, state: FSMC
 
 ✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Объём двигателя: {car.engine_volume} л
 ✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
@@ -910,7 +910,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext, session: As
 
 ✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Объём двигателя: {car.engine_volume} л
 ✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
@@ -981,7 +981,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 
 ✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Объём двигателя: {car.engine_volume} л
 ✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
@@ -1043,7 +1043,7 @@ async def hot_handler(callback: types.CallbackQuery, session: AsyncSession, stat
 
 ✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Объём двигателя: {car.engine_volume} л
 ✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
@@ -1138,7 +1138,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 
 ✅ Пробег: {int_format(car.route)} км
 ✅ Тип топлива: {car.engine_type} 
-✅ Объём двигателя: {int_format(car.engine_volume)} л
+✅ Объём двигателя: {car.engine_volume} л
 ✅ Мощность: {int_format(car.power)} л.с.
 ✅ Привод: {car.weel_drive}
 ✅ Кузов: {car.body}
