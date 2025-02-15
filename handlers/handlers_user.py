@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 from aiogram import Bot, Dispatcher, types, F, Router
@@ -9,7 +10,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_get_managers_group, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_id, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_get_managers_group, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -17,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 # from keybords.inline_kbds import get_callback_btns
-from functions.functions import format_number, get_admins_and_managers, int_format
+from functions.functions import format_number, get_admins_and_managers, int_format, is_valid_phone_number
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns
 from keybords.return_kbds import main_menu, hot_menu, question_menu, region_menu, engine_menu, old_or_new_menu
 
@@ -312,7 +313,7 @@ __________________________
     
     elif vokeb.get("region") == "rf":
         await bot.edit_message_text(
-            "Оставьте свой нромер, чтобы мы могли с вами связаться",
+            "Оставьте свой номер, чтобы мы могли с вами связаться",
             callback.message.chat.id,
             edit_mes
         )
@@ -348,7 +349,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
     if edge_type == "новый":
         if vokeb.get("region") == "rf":
             await bot.edit_message_text(
-            "Оставьте свой нромер, чтобы мы могли с вами связаться",
+            "Оставьте свой номер, чтобы мы могли с вами связаться",
             callback.message.chat.id,
             edit_mes
         )
@@ -417,7 +418,7 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 
     if vokeb.get("region") == "rf":
         await bot.edit_message_text(
-            "Оставьте свой нромер, чтобы мы могли с вами связаться",
+            "Оставьте свой номер, чтобы мы могли с вами связаться",
             callback.message.chat.id,
             edit_mes
         )
@@ -483,9 +484,17 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 @user_router_manager.message(Statess.enter_phone_number, F.text)
 async def enter_cost(message: types.Message, state: FSMContext, session: AsyncSession):
     await message.delete()
-    phon_number = message.text
+
+    # Получаем сохранённые данные
     vokeb = await state.get_data()
     edit_mesID = int(vokeb.get("main_mes"))
+    phone_number = message.text
+
+    # Проверяем, соответствует ли номер международному формату
+    if not is_valid_phone_number(phone_number):
+        await bot.edit_message_text(f"❌ Неверный формат номера\n<b>{phone_number}</b>\nВведите номер в международном формате, например: +1234567890", message.chat.id, edit_mesID, parse_mode='HTML')
+        return  # Выходим из функции, если номер неверный
+
     cost = int(vokeb.get("monet_for_buy"))
     engine_type = vokeb.get("engine_type")
 
@@ -496,7 +505,7 @@ async def enter_cost(message: types.Message, state: FSMContext, session: AsyncSe
 Тип двигателя: {engine_type}
 
 Имя пользоватлея: @{message.from_user.username}
-Телефон: {phon_number}
+Телефон: {phone_number}
 '''
 
     if vokeb.get("engine_str_volume"):
@@ -511,7 +520,7 @@ async def enter_cost(message: types.Message, state: FSMContext, session: AsyncSe
 Объём двигателя: {engine_volume}
 
 Имя пользоватлея: @{message.from_user.username}
-Телефон: {phon_number}
+Телефон: {phone_number}
 
 '''
 
@@ -1293,46 +1302,62 @@ async def hot_handler(message: types.Message, state: FSMContext, session: AsyncS
 
 
 
-@user_router_manager.callback_query(StateFilter('*'), F.data.startswith("end_"))            # Обработка inline-кнопки "Завершить диалог"
+@user_router_manager.callback_query(StateFilter('*'), F.data.startswith("end_"))  # Обработка inline-кнопки "Завершить диалог"
 async def start_handler(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
-
     await callback.message.delete()
     user_id = callback.message.chat.id
-    # delmes = int(callback.data.removeprefix("end_"))
+    user_name = callback.from_user.full_name
 
-    # await bot.delete_message(callback.message.chat.id, delmes)
+    # Получаем диалог по client_message_id
+    dialog = await orm_get_dialog_by_client_id(session, user_id)
+
+    if dialog and dialog.manager_id:
+        await bot.send_message(int(dialog.manager_id), f"Пользователь {user_name} завершил диалог.")
+
+
     # Завершаем диалог
     await orm_end_dialog(session, client_id=user_id)
-    await callback.message.answer("Диалог завершён!", reply_markup=main_menu.as_markup(
-                            resize_keyboard=True))
+
+    # Сообщаем пользователю
+    await callback.message.answer(
+        "Диалог завершён!",
+        reply_markup=main_menu.as_markup(resize_keyboard=True)
+    )
+
 
 
 @user_router_manager.message(F.text == "/end", F.reply_to_message)  # Команда /end при ответе на сообщение
-async def end_dialog_with_reply(message: types.Message, session: AsyncSession) -> None:
-    
-    # Проверяем, что менеджер отвечает на пересланное сообщение клиента
+async def end_dialog_with_reply(message: types.Message, session: AsyncSession, bot: Bot) -> None:
+    # Проверяем, есть ли ответное сообщение
     replied_message = message.reply_to_message
 
-    if not replied_message or not replied_message.forward_from:
-        await message.reply("❌ Эта команда должна быть ответом на пересланное сообщение клиента.")
+    if not replied_message:
+        await message.reply("❌ Эта команда должна быть ответом на сообщение клиента.")
         return
 
-    # Получаем ID клиента из пересланного сообщения
-    client_id = replied_message.forward_from.id
-
-    # Получаем информацию о диалоге из базы данных
+    # Получаем информацию о диалоге из базы данных по ID пересланного сообщения
     dialog = await orm_get_dialog_by_client_message(session, client_message_id=replied_message.message_id)
 
     if not dialog:
         await message.reply("❌ Диалог не найден в базе данных.")
         return
 
+    # Извлекаем ID клиента из найденного диалога
+    client_id = dialog.client_id
+
+    if not client_id:
+        await message.reply("❌ Не удалось определить ID клиента.")
+        return
+
     # Уведомляем клиента о завершении диалога
-    await bot.send_message(
-        chat_id=client_id,
-        text="Диалог завершён менеджером. Спасибо за обращение!",
-        reply_markup=main_menu.as_markup(resize_keyboard=True)
-    )
+    try:
+        await bot.send_message(
+            chat_id=client_id,
+            text="Диалог завершён менеджером. Спасибо за обращение!",
+            reply_markup=main_menu.as_markup(resize_keyboard=True)
+        )
+    except Exception:
+        await message.reply("⚠️ Не удалось отправить уведомление клиенту, возможно, он ограничил сообщения от ботов.")
 
     # Завершаем диалог в базе данных
     await orm_end_dialog(session, client_id=client_id)

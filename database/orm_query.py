@@ -104,15 +104,29 @@ async def orm_delete_DefQuestion(session: AsyncSession, Question_id: int):      
 ##############################   Диалоги с клиентом   #######################################
 
 async def orm_add_dialog(session: AsyncSession, client_id: int, client_message_id: int):
-    obj = Dialog(
-        client_id=client_id,
-        client_message_id=client_message_id,
-        manager_id=None,  # Явное указание NULL
-        manager_message_id=None,  # Явное указание NULL
-        is_active=True
-    )
-    session.add(obj)
+    """Добавляет новый диалог или обновляет существующий."""
+    query = select(Dialog).where(Dialog.client_id == client_id)
+    result = await session.execute(query)
+    dialog = result.scalar()
+
+    if dialog:
+        # Если запись уже есть, обновляем client_message_id и обнуляем менеджера
+        dialog.client_message_id = client_message_id
+        dialog.manager_id = None
+        dialog.manager_message_id = None
+    else:
+        # Если записи нет, создаем новую
+        dialog = Dialog(
+            client_id=client_id,
+            client_message_id=client_message_id,
+            manager_id=None,  # Явное указание NULL
+            manager_message_id=None,  # Явное указание NULL
+            is_active=True
+        )
+        session.add(dialog)
+
     await session.commit()
+
 
 
     
@@ -122,6 +136,12 @@ async def orm_get_dialog_by_client_message(session: AsyncSession, client_message
     dialog = result.scalar()  # Извлечение одной записи (или None)
     return dialog
 
+
+async def orm_get_dialog_by_client_id(session: AsyncSession, client_id: int) -> Dialog | None:
+    query = select(Dialog).where(Dialog.client_id == client_id, Dialog.is_active == True)
+    result = await session.execute(query)  # Ожидание выполнения запроса
+    dialog = result.scalar()  # Извлечение одной записи (или None)
+    return dialog
 
 
 async def orm_update_manager_in_dialog(session: AsyncSession, client_message_id: int, manager_id: int | None, manager_message_id: int | None):     # Обновляет данные диалога
@@ -142,20 +162,23 @@ async def orm_update_manager_in_dialog(session: AsyncSession, client_message_id:
 
 
 
-async def orm_end_dialog(session: AsyncSession, client_id: int | None = None, manager_id: int | None = None):   # Заканчивает диалог с клиентом
-    query = (
-        select(Dialog)
-        .where(Dialog.is_active == True)
-    )
+async def orm_end_dialog(session: AsyncSession, client_id: int | None = None, manager_id: int | None = None):
+    """Удаляет диалог с клиентом из базы данных."""
+    query = select(Dialog).where(Dialog.is_active == True)
+
     if client_id:
         query = query.where(Dialog.client_id == client_id)
     if manager_id:
         query = query.where(Dialog.manager_id == manager_id)
+
     result = await session.execute(query)
     dialogs = result.scalars().all()
-    for dialog in dialogs:
-        dialog.is_active = False
-    await session.commit()
+
+    if dialogs:
+        for dialog in dialogs:
+            await session.delete(dialog)  # Удаляем найденные записи
+        await session.commit()  # Фиксируем изменения в БД
+
 
 
 
@@ -166,15 +189,29 @@ async def orm_save_client_message(
     client_message_id: int,
     manager_message_id: int
 ) -> None:
-    new_message = Dialog(
-        client_id=client_id,
-        manager_id=manager_id,
-        client_message_id=client_message_id,
-        manager_message_id=manager_message_id,
-        is_active=True  # Обозначаем, что диалог активен
-    )
-    session.add(new_message)
+    """Сохраняет сообщение клиента, обновляя существующую запись или создавая новую."""
+    query = select(Dialog).where(Dialog.client_id == client_id)
+    result = await session.execute(query)
+    dialog = result.scalar()
+
+    if dialog:
+        # Если запись уже есть, обновляем данные
+        dialog.client_message_id = client_message_id
+        dialog.manager_id = manager_id
+        dialog.manager_message_id = manager_message_id
+    else:
+        # Если записи нет, создаем новую
+        new_message = Dialog(
+            client_id=client_id,
+            manager_id=manager_id,
+            client_message_id=client_message_id,
+            manager_message_id=manager_message_id,
+            is_active=True  # Обозначаем, что диалог активен
+        )
+        session.add(new_message)
+
     await session.commit()
+
 
 
 

@@ -1,3 +1,4 @@
+import re
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy import text
 from aiogram.utils.media_group import MediaGroupBuilder
@@ -64,3 +65,16 @@ async def get_admins_and_managers(session: AsyncSession):
     managers_ids = list(managerss.keys())
 
     return admins_ids, adminss, managers_ids, managerss
+
+
+def is_valid_phone_number(phone: str) -> bool:
+    """Проверяет, введён ли номер в международном формате (+код страны и цифры)."""
+    if not phone:  # Проверка на пустую строку
+        return False
+
+    phone = phone.strip()  # Убираем лишние пробелы в начале и конце
+
+    pattern = r"^\+\d{10,15}$"  # Международный формат +код и от 10 до 15 цифр
+    match = re.match(pattern, phone)
+
+    return match is not None  # Вернёт True, если формат правильный
