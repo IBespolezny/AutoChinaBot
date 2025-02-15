@@ -47,9 +47,10 @@ admin_menu = ReplyKeyboardBuilder()                          # Клавиату�
 admin_menu.add(
     KeyboardButton(text="Управление доступом"),
     KeyboardButton(text="База автомобилей"),
+    KeyboardButton(text="Расчёт стоимости"),
     KeyboardButton(text="Частые вопросы"),
 )
-admin_menu.adjust(1,2)
+admin_menu.adjust(2,2)
 
 
 access_settings = ReplyKeyboardBuilder()                          # Клавиатура кнопки "Управление доступом"

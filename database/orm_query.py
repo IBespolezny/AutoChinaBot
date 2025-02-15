@@ -2,7 +2,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Admin, Cars, DefQuestion, Dialog, Manager, ManagersGroup
+from database.models import Admin, CalculateAuto, Cars, DefQuestion, Dialog, Manager, ManagersGroup
 
 ##############################   АДМИНИСТРАТОРЫ   #######################################
 
@@ -331,3 +331,48 @@ async def orm_get_managers_group(session: AsyncSession):
         return group.group_id
     else:
         return None
+    
+
+    ######################### Расчёт автомобилей админка #####################
+
+async def orm_update_calculate_column(session: AsyncSession, column_name: str, value: float):
+
+    # Проверяем, существует ли указанный столбец в модели
+    if column_name not in CalculateAuto.__table__.columns:
+        raise ValueError(f"Столбец '{column_name}' не существует в таблице CalculateAuto.")
+
+    # Выполняем запрос для получения первой записи
+    query = select(CalculateAuto)
+    result = await session.execute(query)
+    existing_record = result.scalars().first()
+
+    if existing_record:
+        # Если запись существует, обновляем указанный столбец
+        setattr(existing_record, column_name, value)
+    else:
+        # Если записи нет, создаем новую запись с указанным значением
+        new_record = CalculateAuto(**{column_name: value})
+        session.add(new_record)
+
+    # Сохраняем изменения
+    await session.commit()
+    print(f"Столбец '{column_name}' успешно обновлен значением {value}.")
+
+
+
+
+async def orm_get_calculate_column_value(session: AsyncSession, column_name: str) -> float:
+    # Выполняем запрос для получения записи
+    query = select(CalculateAuto)
+    result = await session.execute(query)
+    existing_record = result.scalars().first()
+
+    if not existing_record:
+        raise ValueError("Запись в таблице CalculateAuto отсутствует.")
+
+    # Проверяем, существует ли указанный столбец
+    if not hasattr(existing_record, column_name):
+        raise ValueError(f"Столбец '{column_name}' не существует в таблице CalculateAuto.")
+
+    # Возвращаем значение столбца
+    return getattr(existing_record, column_name)

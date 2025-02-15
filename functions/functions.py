@@ -1,9 +1,9 @@
 import re
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
-from sqlalchemy import text
+from sqlalchemy import select, text
 from aiogram.utils.media_group import MediaGroupBuilder
 
-from database.models import Base
+from database.models import Base, CalculateAuto
 from database.orm_query import orm_get_admin, orm_get_admins, orm_get_managers
 
 
@@ -78,3 +78,49 @@ def is_valid_phone_number(phone: str) -> bool:
     match = re.match(pattern, phone)
 
     return match is not None  # Вернёт True, если формат правильный
+
+
+async def create_calculate_table_with_defaults(engine: AsyncEngine):
+    """
+    Создаёт таблицу calculate_auto, если она отсутствует, и добавляет запись с дефолтными значениями, если таблица пуста.
+    """
+    try:
+        async with engine.connect() as conn:
+            # Проверяем, существует ли таблица
+            query = text(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'calculate_auto';"
+            )
+            result = await conn.execute(query)
+            table_exists = result.scalar() > 0
+
+            if not table_exists:
+                # Создаём таблицу
+                async with engine.begin() as sync_conn:
+                    await sync_conn.run_sync(CalculateAuto.metadata.create_all)
+                print("Таблица 'calculate_auto' создана.")
+
+            # Проверяем, есть ли запись в таблице
+            async with AsyncSession(engine) as session:
+                query = select(CalculateAuto)
+                result = await session.execute(query)
+                record_exists = result.scalars().first()
+
+                if not record_exists:
+                    # Добавляем запись с дефолтными значениями
+                    default_record = CalculateAuto(
+                        min_cost=5000.0,
+                        custom=500.0,
+                        comis_rb=24.0,
+                        bank_comis=2.0,
+                        delivery=2300.0,
+                        engine_volume_1500=1750.0,
+                        engine_volume_1500_1800=3000.0,
+                        engine_volume_1800_2300=3800.0,
+                    )
+                    session.add(default_record)
+                    await session.commit()
+                    print("Запись с дефолтными значениями добавлена в таблицу 'calculate_auto'.")
+                else:
+                    print("В таблице 'calculate_auto' уже существует запись.")
+    except Exception as e:
+        print(f"Ошибка при создании таблицы calculate_auto: {e}")

@@ -10,7 +10,7 @@ from aiogram.types import ReplyKeyboardRemove, Message, InlineKeyboardMarkup, In
 import requests
 
 import config
-from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_id, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_get_managers_group, orm_save_client_message, orm_update_manager_in_dialog
+from database.orm_query import orm_add_dialog, orm_end_dialog, orm_get_DefQuestion, orm_get_DefQuestions, orm_get_admins, orm_get_calculate_column_value, orm_get_car, orm_get_car_by_flag, orm_get_cars_by_cost, orm_get_dialog_by_client_id, orm_get_dialog_by_client_message, orm_get_electrocars, orm_get_managers, orm_get_managers_group, orm_save_client_message, orm_update_manager_in_dialog
 from database.models import Dialog
 from filters.chat_filters import ChatTypeFilter
 
@@ -52,6 +52,7 @@ class Statess(StatesGroup):
     choos_region = State()                      # Состояние формирования заказа
     enter_engine_type = State()                      # Состояние формирования заказа
     enter_phone_number = State()                      # Состояние формирования заказа
+    Write_sum = State()                      # Состояние формирования заказа
 
     Mark = State()                              # Добавление марки авто
     Model = State()                              # Добавление модели авто
@@ -197,9 +198,10 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
 
 
 @user_router_manager.message(Statess.enter_cost, F.text)
-async def enter_cost(message: types.Message, state: FSMContext):
+async def enter_cost(message: types.Message, state: FSMContext, session: AsyncSession):
     vokeb = await state.get_data()
     edit_mesID = int(vokeb.get("main_mes"))
+    min_cost = await orm_get_calculate_column_value(session, "min_cost")
     try:
         monet_for_buy = float(message.text)
     except ValueError:
@@ -214,9 +216,9 @@ async def enter_cost(message: types.Message, state: FSMContext):
     
     await message.delete()
 
-    if monet_for_buy < 5000:
+    if monet_for_buy < min_cost:
         await bot.edit_message_text(
-        "<b>Некорректный ввод</b>\n\nВведите сумму больше 5 000 $",
+        f"<b>Некорректный ввод</b>\n\nВведите сумму больше <b>{int_format(min_cost)}</b> $",
         message.chat.id,
         edit_mesID,
         parse_mode='HTML',
@@ -258,8 +260,13 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 
 @user_router_manager.callback_query(F.data.startswith("Гибрид_"))
 @user_router_manager.callback_query(F.data.startswith("Электрический_"))
-async def next_car(callback: types.CallbackQuery, state: FSMContext):
+async def next_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     edit_mes = callback.message.message_id
+    comis_rb = await orm_get_calculate_column_value(session, "comis_rb")
+    bank_comis = await orm_get_calculate_column_value(session, "bank_comis")
+    custom = await orm_get_calculate_column_value(session, "custom")
+    delivery = await orm_get_calculate_column_value(session, "delivery")
+
     await bot.edit_message_text(
         "Идёт расчёт...",
         callback.message.chat.id,
@@ -274,16 +281,14 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
     if vokeb.get("region") == "rb":
         if vokeb.get("engine_type") == "Гибрид":
             cost = int(vokeb.get("monet_for_buy"))
-            customs_cost = (cost / 100 * 24) + 500  # 500 $ за таможню + 24% от цены авто
-            delivery = 2300
-            bank_comission = cost / 100 * 2  # 2% комиссия банка
+            customs_cost = (cost / 100 * comis_rb) + custom  # 500 $ за таможню + 24% от цены авто
+            bank_comission = cost / 100 * bank_comis  # комиссия банка
             final_cost = cost + customs_cost + delivery + bank_comission
 
         if vokeb.get("engine_type") == "Электрический":
             cost = int(vokeb.get("monet_for_buy"))
-            customs_cost = 500  # 500 $ за таможню
-            delivery = 2300
-            bank_comission = cost / 100 * 2  # 2% комиссия банка
+            customs_cost = custom  # 500 $ за таможню
+            bank_comission = cost / 100 * bank_comis  # 2% комиссия банка
             final_cost = cost + customs_cost + delivery + bank_comission
         await bot.edit_message_text(
         f'''
@@ -339,8 +344,13 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
 
 @user_router_manager.callback_query(F.data.startswith("новый"))
 @user_router_manager.callback_query(F.data.startswith("старый"))
-async def next_car(callback: types.CallbackQuery, state: FSMContext):
+async def next_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     edit_mes = callback.message.message_id
+
+    comis_rb = await orm_get_calculate_column_value(session, "comis_rb")
+    bank_comis = await orm_get_calculate_column_value(session, "bank_comis")
+    custom = await orm_get_calculate_column_value(session, "custom")
+    delivery = await orm_get_calculate_column_value(session, "delivery")
 
     edge_type = callback.data
     await state.update_data(edge_type = edge_type)
@@ -364,9 +374,8 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
         await asyncio.sleep(2)
 
         cost = int(vokeb.get("monet_for_buy"))
-        delivery = 2300
-        bank_comission = cost / 100 * 2  # 2% комиссия банка
-        customs_cost = (cost / 100 * 24) + 500  # 500 $ за таможню + 24% от цены авто
+        bank_comission = cost / 100 * bank_comis  # 2% комиссия банка
+        customs_cost = (cost / 100 * comis_rb) + custom  # 500 $ за таможню + 24% от цены авто
         final_cost = cost + customs_cost + delivery + bank_comission
         await bot.edit_message_text(
         f'''
@@ -410,11 +419,16 @@ __________________________
 @user_router_manager.callback_query(F.data.startswith("1500_"))
 @user_router_manager.callback_query(F.data.startswith("1500_1800"))
 @user_router_manager.callback_query(F.data.startswith("1800_2300"))
-async def next_car(callback: types.CallbackQuery, state: FSMContext):
+async def next_car(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     edit_mes = callback.message.message_id
     engine_str_volume = callback.data
     await state.update_data(engine_str_volume = engine_str_volume)
     vokeb = await state.get_data()
+
+    comis_rb = await orm_get_calculate_column_value(session, "comis_rb")
+    bank_comis = await orm_get_calculate_column_value(session, "bank_comis")
+    custom = await orm_get_calculate_column_value(session, "custom")
+    delivery = await orm_get_calculate_column_value(session, "delivery")
 
     if vokeb.get("region") == "rf":
         await bot.edit_message_text(
@@ -435,15 +449,14 @@ async def next_car(callback: types.CallbackQuery, state: FSMContext):
     engine_volume = callback.data
     await state.update_data(engine_volume = engine_volume)
     cost = int(vokeb.get("monet_for_buy"))
-    delivery = 2300
-    bank_comission = cost / 100 * 2  # 2% комиссия банка
+    bank_comission = cost / 100 * bank_comis  # 2% комиссия банка
 
     if engine_volume == "1500_":
-        customs_cost = 1750
+        customs_cost = await orm_get_calculate_column_value(session, "engine_volume_1500")
     elif engine_volume == "1500_1800":
-        customs_cost = 3000
+        customs_cost = await orm_get_calculate_column_value(session, "engine_volume_1500_1800")
     elif engine_volume == "1800_2300":
-        customs_cost = 3800
+        customs_cost = await orm_get_calculate_column_value(session, "engine_volume_1800_2300")
 
     final_cost = cost + customs_cost + delivery + bank_comission
     await bot.edit_message_text(

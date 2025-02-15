@@ -68,3 +68,16 @@ class ManagersGroup(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     group_id: Mapped[BIGINT] = mapped_column(BIGINT, nullable=False)
+
+class CalculateAuto(Base):
+    __tablename__ = 'calculate_auto'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    min_cost: Mapped[float] = mapped_column(nullable=False, default=5000.0)
+    custom: Mapped[float] = mapped_column(nullable=False, default=500.0)
+    comis_rb: Mapped[float] = mapped_column(nullable=False, default=24.0)
+    bank_comis: Mapped[float] = mapped_column(nullable=False, default=2.0)
+    delivery: Mapped[float] = mapped_column(nullable=False, default=2300.0)
+    engine_volume_1500: Mapped[float] = mapped_column(nullable=False, default=1750.0)
+    engine_volume_1500_1800: Mapped[float] = mapped_column(nullable=False, default=3000.0)
+    engine_volume_1800_2300: Mapped[float] = mapped_column(nullable=False, default=3800.0)

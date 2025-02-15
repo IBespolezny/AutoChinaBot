@@ -6,10 +6,11 @@ from dotenv import find_dotenv, load_dotenv
 
 from database.engine import create_db, drop_db, session_maker, engine
 from database.models import Admin, Cars, DefQuestion, Dialog, Manager, ManagersGroup
-from functions.functions import create_specific_table
+from functions.functions import create_calculate_table_with_defaults, create_specific_table
 from handlers.handlers_user import user_router_manager
 from handlers.handlers_admin import admin_router
 from handlers.handlers_group import managers_group_router
+from handlers.handlers_admin_calculate import admin_calculate_router
 
 import logging
 
@@ -27,6 +28,7 @@ bot = Bot(token=os.getenv("API_TOKEN"))
 dp = Dispatcher()
 dp.include_routers(managers_group_router)   # Подключение диспетчера для групп
 dp.include_routers(admin_router)   # Подключение диспетчера для групп
+dp.include_routers(admin_calculate_router) # Подключение диспетчера для расчёта стоимости
 dp.include_routers(user_router_manager) # Подключение диспетчера для приватного чата
 
 # Команды для приватных чатов
@@ -49,6 +51,7 @@ async def on_startup(bot):
     await create_specific_table(engine, Manager)
     await create_specific_table(engine, Admin)
     await create_specific_table(engine, ManagersGroup)
+    await create_calculate_table_with_defaults(engine)
 
 async def on_shutdown(bot):
     print("бот закончил работу")
