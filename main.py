@@ -10,7 +10,14 @@ from functions.functions import create_calculate_table_with_defaults, create_spe
 from handlers.handlers_user import user_router_manager
 from handlers.handlers_admin import admin_router
 from handlers.handlers_group import managers_group_router
+
 from handlers.handlers_admin_calculate import admin_calculate_router
+from handlers.handlers_admin_auto_base import admin_auto_base_router
+from handlers.handlers_admin_faq import admin_faq_router
+
+from handlers.handlers_user_select_auto import user_select_car
+from handlers.handlers_user_calculate_auto import user_calculate_router
+from handlers.handlers_user_find_auto import user_find_auto
 
 import logging
 
@@ -26,10 +33,15 @@ ALLOW_UPDATES = ['message', 'edited_message', 'callback_query']     # Какие
 bot = Bot(token=os.getenv("API_TOKEN"))
 # bot.my_admins_list = []                 # Список админов бота
 dp = Dispatcher()
-dp.include_routers(managers_group_router)   # Подключение диспетчера для групп
-dp.include_routers(admin_router)   # Подключение диспетчера для групп
-dp.include_routers(admin_calculate_router) # Подключение диспетчера для расчёта стоимости
-dp.include_routers(user_router_manager) # Подключение диспетчера для приватного чата
+dp.include_routers(managers_group_router)       # Подключение диспетчера для групп
+dp.include_routers(admin_router)                # Подключение диспетчера для добавления ролей
+dp.include_routers(admin_auto_base_router)      # Подключение диспетчера для управления базой автомобилей
+dp.include_routers(admin_faq_router)            # Подключение диспетчера для управления частыми вопросами
+dp.include_routers(admin_calculate_router)      # Подключение диспетчера для расчёта стоимости автомобилей
+dp.include_routers(user_select_car)         # Подключение диспетчера для приватного чата
+dp.include_routers(user_calculate_router)         # Подключение диспетчера для приватного чата
+dp.include_routers(user_find_auto)         # Подключение диспетчера для приватного чата
+dp.include_routers(user_router_manager)         # Подключение диспетчера для приватного чата
 
 # Команды для приватных чатов
 commands = [
