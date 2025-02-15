@@ -44,6 +44,12 @@ async def cancel_handler(message: types.Message, state: FSMContext, session: Asy
 Банковская комиссия: <b>{await orm_get_calculate_column_value(session, "bank_comis")}%</b> \n/change_comis_bank
 
 Доставка: <b>{await orm_get_calculate_column_value(session, "delivery")} $</b> \n/change_delivery_sum
+
+Таможня ДВС Б/У 1500: <b>{await orm_get_calculate_column_value(session, "engine_volume_1500")} $</b> \n/change_dvs_1500
+
+Таможня ДВС Б/У 1500-1800: <b>{await orm_get_calculate_column_value(session, "engine_volume_1500_1800")} $</b> \n/change_dvs_1500_1800
+
+Таможня ДВС Б/У 1800-2300: <b>{await orm_get_calculate_column_value(session, "engine_volume_1800_2300")} $</b> \n/change_dvs_1800_2300
 ''', 
     parse_mode='HTML',
     reply_markup=get_custom_callback_btns(btns={'Назад':'main_menu_'}, layout=[1]))
@@ -132,6 +138,54 @@ async def send_welcome(message: types.Message, state: FSMContext, session: Async
     await state.set_state(Statess.Write_sum)
 
 
+@admin_calculate_router.message(Statess.Admin_kbd, Command("change_dvs_1500"))
+async def send_welcome(message: types.Message, state: FSMContext, session: AsyncSession):
+    await message.delete()
+    vokeb = await state.get_data()
+    change_mes_id = vokeb.get("change_mes_id")
+
+    await bot.edit_message_text(
+        "Введите новую комиссию для ДВС БУ и объёмом двигателя до 1500:",
+        message.chat.id,
+        change_mes_id,
+        reply_markup=get_custom_callback_btns(btns={'Назад':'main_calculate_menu_'}, layout=[1])
+    )
+    await state.update_data(edit_column = "engine_volume_1500")
+    await state.set_state(Statess.Write_sum)
+
+
+@admin_calculate_router.message(Statess.Admin_kbd, Command("change_dvs_1500_1800"))
+async def send_welcome(message: types.Message, state: FSMContext, session: AsyncSession):
+    await message.delete()
+    vokeb = await state.get_data()
+    change_mes_id = vokeb.get("change_mes_id")
+
+    await bot.edit_message_text(
+        "Введите новую комиссию для ДВС БУ и объёмом двигателя от 1500 до 1800:",
+        message.chat.id,
+        change_mes_id,
+        reply_markup=get_custom_callback_btns(btns={'Назад':'main_calculate_menu_'}, layout=[1])
+    )
+    await state.update_data(edit_column = "engine_volume_1500_1800")
+    await state.set_state(Statess.Write_sum)
+
+
+@admin_calculate_router.message(Statess.Admin_kbd, Command("change_dvs_1800_2300"))
+async def send_welcome(message: types.Message, state: FSMContext, session: AsyncSession):
+    await message.delete()
+    vokeb = await state.get_data()
+    change_mes_id = vokeb.get("change_mes_id")
+
+    await bot.edit_message_text(
+        "Введите новую комиссию для ДВС БУ и объёмом двигателя от 1800 до 2300:",
+        message.chat.id,
+        change_mes_id,
+        reply_markup=get_custom_callback_btns(btns={'Назад':'main_calculate_menu_'}, layout=[1])
+    )
+    await state.update_data(edit_column = "engine_volume_1800_2300")
+    await state.set_state(Statess.Write_sum)
+
+
 @admin_calculate_router.message(Statess.Write_sum, F.text)
 async def send_welcome(message: types.Message, state: FSMContext, session: AsyncSession):
     await message.delete()
@@ -190,6 +244,36 @@ async def send_welcome(message: types.Message, state: FSMContext, session: Async
         )
             return
         
+        elif edit_column == "engine_volume_1500" and edit_value <= 0:
+            await bot.edit_message_text(
+            "❌ <b>Некорректное значение</b>\n\nВводите значения больше 0",
+            message.chat.id,
+            change_mes_id,
+            reply_markup=get_custom_callback_btns(btns={'Назад':'main_calculate_menu_'}, layout=[1]),
+            parse_mode='HTML'
+        )
+            return
+        
+        elif edit_column == "engine_volume_1500_1800" and edit_value <= 0:
+            await bot.edit_message_text(
+            "❌ <b>Некорректное значение</b>\n\nВводите значения больше 0",
+            message.chat.id,
+            change_mes_id,
+            reply_markup=get_custom_callback_btns(btns={'Назад':'main_calculate_menu_'}, layout=[1]),
+            parse_mode='HTML'
+        )
+            return
+        
+        elif edit_column == "engine_volume_1800_2300" and edit_value <= 0:
+            await bot.edit_message_text(
+            "❌ <b>Некорректное значение</b>\n\nВводите значения больше 0",
+            message.chat.id,
+            change_mes_id,
+            reply_markup=get_custom_callback_btns(btns={'Назад':'main_calculate_menu_'}, layout=[1]),
+            parse_mode='HTML'
+        )
+            return
+        
     except ValueError:
         await bot.edit_message_text(
         "❌ <b>Некорректное значение</b>\n\nВводите числовые значения, например 123 или 345,5",
@@ -214,12 +298,21 @@ async def send_welcome(message: types.Message, state: FSMContext, session: Async
 Банковская комиссия: <b>{await orm_get_calculate_column_value(session, "bank_comis")}%</b> \n/change_comis_bank
 
 Доставка: <b>{await orm_get_calculate_column_value(session, "delivery")} $</b> \n/change_delivery_sum
+
+Таможня ДВС Б/У 1500: <b>{await orm_get_calculate_column_value(session, "engine_volume_1500")} $</b> \n/change_dvs_1500
+
+Таможня ДВС Б/У 1500-1800: <b>{await orm_get_calculate_column_value(session, "engine_volume_1500_1800")} $</b> \n/change_dvs_1500_1800
+
+Таможня ДВС Б/У 1800-2300: <b>{await orm_get_calculate_column_value(session, "engine_volume_1800_2300")} $</b> \n/change_dvs_1800_2300
 ''', 
     chat_id=message.chat.id,
     message_id=change_mes_id,
     parse_mode='HTML',
     reply_markup=get_custom_callback_btns(btns={'Назад':'main_menu_'}, layout=[1]))
     await state.set_state(Statess.Admin_kbd)
+
+
+
 
 ############################ Кнопки "Назад"  ###############################
 
@@ -244,6 +337,12 @@ async def cancel_handler(callback: types.CallbackQuery, state: FSMContext, sessi
 Банковская комиссия: <b>{await orm_get_calculate_column_value(session, "bank_comis")}%</b> \n/change_comis_bank
 
 Доставка: <b>{await orm_get_calculate_column_value(session, "delivery")} $</b> \n/change_delivery_sum
+
+Таможня ДВС Б/У 1500: <b>{await orm_get_calculate_column_value(session, "engine_volume_1500")} $</b> \n/change_dvs_1500
+
+Таможня ДВС Б/У 1500-1800: <b>{await orm_get_calculate_column_value(session, "engine_volume_1500_1800")} $</b> \n/change_dvs_1500_1800
+
+Таможня ДВС Б/У 1800-2300: <b>{await orm_get_calculate_column_value(session, "engine_volume_1800_2300")} $</b> \n/change_dvs_1800_2300
 ''', 
     chat_id=callback.message.chat.id,
     message_id=change_mes_id,

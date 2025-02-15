@@ -96,6 +96,7 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
     await message.answer("Главное меню🔙", reply_markup=main_menu.as_markup(
                             resize_keyboard=True))
 
+
 #######################################     Подобрать автомобиль    ###########################################
 
 @user_router_manager.message(F.text.casefold().contains("подобрать автомобиль"))   # Логика Подобрать автомобиль
