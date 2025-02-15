@@ -269,10 +269,10 @@ async def orm_get_electrocars(session: AsyncSession):             # Получе
     result = await session.execute(query)
     return result.scalars().all()
 
-
+# только популярные авто во флаге по стоимости, по логике 15.02
 async def orm_get_cars_by_cost(session: AsyncSession, min_value: float, max_value: float):
     """Получение списка автомобилей в заданном диапазоне цен."""
-    query = select(Cars).where(Cars.cost.between(min_value, max_value))
+    query = select(Cars).where(Cars.cost.between(min_value, max_value), Cars.flag == "популярные")
     result = await session.execute(query)
     cars = result.scalars().all()
     

@@ -565,7 +565,7 @@ async def hot_handler(message: types.Message, state: FSMContext) -> None:
     
 
     
-@user_router_manager.message(F.text.casefold().contains("подборка автомобилей по стоимости"))
+@user_router_manager.message(F.text.casefold().contains("по стоимости"))
 async def hot_handler(message: types.Message, state: FSMContext) -> None:
     await state.update_data(order_mes=message.message_id, order_chat=message.chat.id)
     vokeb = await state.get_data()
@@ -1112,7 +1112,7 @@ async def prev_car(callback: types.CallbackQuery, state: FSMContext, session: As
 
     # Разбираем диапазон стоимости
     min_val, max_val = map(float, car_cost.split('_'))
-    cars = await orm_get_cars_by_cost(session, min_val, max_val)
+    cars = await orm_get_cars_by_cost(session, min_val, max_val)  # только популярные
 
     if cars:
         total_cars = len(cars)

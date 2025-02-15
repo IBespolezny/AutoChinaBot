@@ -25,7 +25,7 @@ main_menu.adjust(2,2)
 hot_menu = ReplyKeyboardBuilder()                               # Клавиатура кнопки "Горячие предложения"
 hot_menu.add(
     KeyboardButton(text="Назад🔙"),
-    KeyboardButton(text="Подборка автомобилей по стоимости"),
+    KeyboardButton(text="По стоимости"),
     KeyboardButton(text="Популярные автомобили🔥"),
     KeyboardButton(text="Электроавтомобили"),
     KeyboardButton(text="Автомобили в пути"),
