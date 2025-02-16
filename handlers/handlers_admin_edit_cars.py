@@ -290,7 +290,7 @@ async def edit_car_param(callback: types.CallbackQuery, state: FSMContext, sessi
                 'В наличии 🏁': '_в наличии',
                 '❌': '_нет',
                 'Назад':f'back_to_car_{car_id}'
-            }, layout=[2,2]))
+            }, layout=[2,2,1]))
         await state.update_data(field = "flag")
         
     elif callback.data == "edit_weel_drive":
