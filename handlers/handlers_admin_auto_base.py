@@ -5,14 +5,14 @@ from aiogram import Bot, types, F, Router
 from aiogram.filters import Command, StateFilter, BaseFilter
 from aiogram.fsm.context import FSMContext
 from database.models import Cars
-from database.orm_query import orm_add_DefQuestion, orm_add_admin, orm_add_car, orm_add_manager, orm_delete_DefQuestion, orm_delete_admin, orm_delete_car, orm_delete_manager, orm_get_DefQuestions, orm_get_admin, orm_get_admins, orm_get_calculate_column_value, orm_get_cars, orm_get_managers, orm_update_calculate_column
+from database.orm_query import orm_add_DefQuestion, orm_add_admin, orm_add_car, orm_add_manager, orm_delete_DefQuestion, orm_delete_admin, orm_delete_car, orm_delete_manager, orm_get_DefQuestions, orm_get_admin, orm_get_admins, orm_get_calculate_column_value, orm_get_car, orm_get_cars, orm_get_managers, orm_update_calculate_column
 from filters.chat_filters import ChatTypeFilter
 import config
 
 from aiogram.utils.media_group import MediaGroupBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from functions.functions import get_admins_and_managers
+from functions.functions import get_admins_and_managers, int_format
 from handlers.handlers_user import Statess
 from keybords.inline_kbds import get_callback_btns, get_callback_btns_single_row, get_custom_callback_btns, orm_delete_car_buttons
 from keybords.return_kbds import admin_menu, access_settings, admin_settings, manager_settings, auto_settings, add_del_back_menu
@@ -37,8 +37,6 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
                             resize_keyboard=True))
 
     
-
-
 
 
 ########################### удалить автомобиль из базы ###########################
@@ -98,8 +96,6 @@ async def delete_selected_car(callback: types.CallbackQuery, state: FSMContext, 
 async def cancel_handler(message: types.Message, state: FSMContext) -> None:
     # Получение сохраненного сообщения
     await message.delete()
-    # delMEs = await message.answer("Загрузка базы данных...", reply_markup=ReplyKeyboardRemove())
-    # await bot.delete_message(message.chat.id, delMEs.message_id)
 
     usemes = await message.answer(
         "Введите марку:",

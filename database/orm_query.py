@@ -278,6 +278,13 @@ async def orm_get_cars_by_cost(session: AsyncSession, min_value: float, max_valu
     
     return cars
 
+async def update_car_field(session: AsyncSession, car_id: int, field: str, value) -> bool:
+    """Обновляет указанное поле автомобиля в базе данных."""
+    stmt = update(Cars).where(Cars.car_id == car_id).values({field: value})
+    await session.execute(stmt)
+    await session.commit()
+    return True
+
 
 ################### Удаление авто ##########################
 

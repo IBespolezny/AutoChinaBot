@@ -14,6 +14,7 @@ from handlers.handlers_group import managers_group_router
 from handlers.handlers_admin_calculate import admin_calculate_router
 from handlers.handlers_admin_auto_base import admin_auto_base_router
 from handlers.handlers_admin_faq import admin_faq_router
+from handlers.handlers_admin_edit_cars import admin_edit_cars
 
 from handlers.handlers_user_select_auto import user_select_car
 from handlers.handlers_user_calculate_auto import user_calculate_router
@@ -38,9 +39,10 @@ dp.include_routers(admin_router)                # Подключение дис�
 dp.include_routers(admin_auto_base_router)      # Подключение диспетчера для управления базой автомобилей
 dp.include_routers(admin_faq_router)            # Подключение диспетчера для управления частыми вопросами
 dp.include_routers(admin_calculate_router)      # Подключение диспетчера для расчёта стоимости автомобилей
-dp.include_routers(user_select_car)         # Подключение диспетчера для приватного чата
-dp.include_routers(user_calculate_router)         # Подключение диспетчера для приватного чата
-dp.include_routers(user_find_auto)         # Подключение диспетчера для приватного чата
+dp.include_routers(admin_edit_cars)             # Подключение диспетчера для расчёта стоимости автомобилей
+dp.include_routers(user_select_car)             # Подключение диспетчера для приватного чата
+dp.include_routers(user_calculate_router)       # Подключение диспетчера для приватного чата
+dp.include_routers(user_find_auto)              # Подключение диспетчера для приватного чата
 dp.include_routers(user_router_manager)         # Подключение диспетчера для приватного чата
 
 # Команды для приватных чатов

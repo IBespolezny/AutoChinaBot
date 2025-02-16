@@ -53,6 +53,8 @@ class Statess(StatesGroup):
     enter_engine_type = State()                      # Состояние формирования заказа
     enter_phone_number = State()                      # Состояние формирования заказа
     Write_sum = State()                      # Состояние формирования заказа
+    Edit_car_int = State()                      # Состояние формирования заказа
+    Edit_car_photo = State()                      # Состояние формирования заказа
 
     Mark = State()                              # Добавление марки авто
     Model = State()                              # Добавление модели авто
